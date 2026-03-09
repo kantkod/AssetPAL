@@ -1,0 +1,26 @@
+{
+  "seed": 42,
+  "domains": [
+    "HR",
+    "SECURITY",
+    "PRICING",
+    "SUPPORT"
+  ],
+  "docsPerDomain": 12,
+  "topK": 6,
+  "swarmSizes": [
+    0,
+    2,
+    5,
+    10,
+    20,
+    40
+  ],
+  "cyEnabled": true,
+  "cySigma": 1.0,
+  "cyBeta": 1.0,
+  "reliabilityWeight": 1.0,
+  "timeWeight": 1.2,
+  "contradictionThreshold": 0.35,
+  "confidenceThreshold": 0.65
+}
