@@ -133,7 +133,7 @@ export function runUpdateCore(cfg, corpus, queries) {
       if (q.phase === "t1") {
         newTotal++;
         if (r.value === q.expected) adoptedNew++;
-        if (r.value && r.value.startsWith("v0_")) regressed++;
+        if (r.value && r.value.startsWith("v0_") && String(q.expected).startsWith("v1_")) regressed++;
 
         const expectedIsV1 = String(q.expected).startsWith("v1_");
         const gotV1 = String(r.value || "").startsWith("v1_");

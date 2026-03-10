@@ -494,12 +494,16 @@ function generateMarkdown(data) {
   if (data.results.swarm) {
     const first = data.results.swarm[BASELINE_ORDER[0]];
     if (first) {
-      const sizes = Object.keys(first).map(k => k.replace("swarm_", "")).map(Number);
+      const keys = Object.keys(first).sort();
+      const colLabels = keys.map(k => {
+        const m = k.match(/^(.+)_swarm_(\d+)$/);
+        return m ? `${m[1].charAt(0).toUpperCase() + m[1].slice(1)} ${m[2]}` : k;
+      });
       md += `## Experiment 3: Swarm Attack\n`;
-      md += `| Baseline | ${sizes.map(s => `Swarm ${s}`).join(" | ")} |\n`;
-      md += `|----------| ${sizes.map(() => "--------").join(" | ")} |\n`;
+      md += `| Baseline | ${colLabels.join(" | ")} |\n`;
+      md += `|----------| ${keys.map(() => "--------").join(" | ")} |\n`;
       for (const b of BASELINE_ORDER) {
-        const row = sizes.map(s => pct(data.results.swarm[b]?.[`swarm_${s}`]?.accuracy ?? 0));
+        const row = keys.map(k => pct(data.results.swarm[b]?.[k]?.accuracy ?? 0));
         md += `| ${BASELINE_LABELS[b]} | ${row.join(" | ")} |\n`;
       }
       md += `\n`;
@@ -661,16 +665,21 @@ function renderUpdateCharts(update) {
 function renderSwarmTable(swarm) {
   const container = document.getElementById("swarmTable");
   const firstBaseline = swarm[BASELINE_ORDER[0]];
-  const sizes = Object.keys(firstBaseline).map(k => k.replace("swarm_", "")).map(Number);
+  const keys = Object.keys(firstBaseline).sort();
+
+  function colLabel(k) {
+    const m = k.match(/^(.+)_swarm_(\d+)$/);
+    return m ? `${m[1].charAt(0).toUpperCase() + m[1].slice(1)} ${m[2]}` : k;
+  }
 
   let html = `<table><tr><th>Baseline</th>`;
-  for (const s of sizes) html += `<th>Swarm ${s}</th>`;
+  for (const k of keys) html += `<th>${colLabel(k)}</th>`;
   html += `</tr>`;
 
   for (const b of BASELINE_ORDER) {
     html += `<tr><td><span class="badge ${BADGE_CLASS[b]}">${BASELINE_LABELS[b]}</span></td>`;
-    for (const s of sizes) {
-      const entry = swarm[b]?.[`swarm_${s}`];
+    for (const k of keys) {
+      const entry = swarm[b]?.[k];
       const acc = entry?.accuracy ?? 0;
       const cls = acc >= 0.9 ? 'best' : acc < 0.4 ? 'worst' : '';
       html += `<td class="${cls}">${pct(acc)}</td>`;
@@ -683,11 +692,11 @@ function renderSwarmTable(swarm) {
 
 function renderSwarmChart(swarm) {
   const firstBaseline = swarm[BASELINE_ORDER[0]];
-  const sizes = Object.keys(firstBaseline).map(k => k.replace("swarm_", "")).map(Number);
+  const keys = Object.keys(firstBaseline).sort();
 
   const datasets = BASELINE_ORDER.map(b => ({
     label: BASELINE_LABELS[b],
-    data: sizes.map(s => ((swarm[b]?.[`swarm_${s}`]?.accuracy ?? 0) * 100)),
+    data: keys.map(k => ((swarm[b]?.[k]?.accuracy ?? 0) * 100)),
     borderColor: COLORS[b],
     backgroundColor: COLORS[b] + "33",
     tension: 0.3,
@@ -696,10 +705,15 @@ function renderSwarmChart(swarm) {
     fill: false
   }));
 
+  const labels = keys.map(k => {
+    const m = k.match(/^(.+)_swarm_(\d+)$/);
+    return m ? `${m[2]} (${m[1]})` : k;
+  });
+
   createChart("swarmChart", {
     type: "line",
     data: {
-      labels: sizes.map(s => `${s} dupes`),
+      labels,
       datasets
     },
     options: {

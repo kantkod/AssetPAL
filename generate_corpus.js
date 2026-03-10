@@ -107,7 +107,7 @@ export async function generateCorpus(configPath = "./default.json") {
         const timestamp = 18;
         const falseVal = `FALSE_${subject}_X`;
         const id = `${domain}_${subject}_F_conf_${docCounter++}`;
-        const c = claim(domain, subject, falseVal, timestamp, source, reliability, id, scope("*", "*", "*", 18, 9999));
+        const c = claim(domain, subject, falseVal, timestamp, source, reliability, id, scope("EU", "PRO", "A", 18, 9999));
         docs.push(makeDoc({
           id,
           domain,
