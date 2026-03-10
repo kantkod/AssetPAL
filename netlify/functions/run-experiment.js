@@ -22,11 +22,13 @@ export default async (req) => {
     let total = 0, correct = 0;
     for (const exp of Object.values(results)) {
       const pal = exp?.["PAL_LEDGER"];
-      if (pal && typeof pal.total === "number") {
+      if (!pal) continue;
+      if (typeof pal.total === "number") {
         total += pal.total;
         correct += pal.correct || 0;
-      } else if (exp) {
-        for (const s of Object.values(exp)) {
+      } else {
+        // Nested structure (swarm): { "plain_swarm_0": { total, correct, ... }, ... }
+        for (const s of Object.values(pal)) {
           if (s && typeof s.total === "number") {
             total += s.total;
             correct += s.correct || 0;

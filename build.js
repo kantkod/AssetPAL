@@ -11,13 +11,13 @@ async function build() {
     const exp = results[expName];
     if (!exp) continue;
     const pal = exp["PAL_LEDGER"] || null;
-    const use = pal || null;
-    if (use && typeof use.total === "number") {
-      total += use.total;
-      correct += use.correct || 0;
+    if (!pal) continue;
+    if (typeof pal.total === "number") {
+      total += pal.total;
+      correct += pal.correct || 0;
     } else {
-      for (const b of Object.keys(exp)) {
-        const s = exp[b];
+      // Nested structure (swarm): { "plain_swarm_0": { total, correct, ... }, ... }
+      for (const s of Object.values(pal)) {
         if (s && typeof s.total === "number") {
           total += s.total;
           correct += s.correct || 0;
