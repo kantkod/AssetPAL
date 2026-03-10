@@ -8,10 +8,10 @@ function filterDocsByTime(docs, nowTs) {
   return docs.filter(d => d.timestamp <= nowTs);
 }
 
-export async function runUpdate() {
-  const cfg = readJson("./default.json");
-  const corpus = readJson("./results/corpus/corpus.json");
-  const queries = readJson("./results/corpus/queries.json").update;
+export async function runUpdate({ cfg: cfgIn, corpus: corpusIn, queries: queriesIn } = {}) {
+  const cfg = cfgIn || readJson("./default.json");
+  const corpus = corpusIn || readJson("./results/corpus/corpus.json");
+  const queries = queriesIn || readJson("./results/corpus/queries.json").update;
 
   const baselines = [
     BASELINES.VANILLA_RAG,
@@ -20,7 +20,7 @@ export async function runUpdate() {
     BASELINES.PAL_LEDGER
   ];
 
-  const runDir = makeRunDir("update");
+  const serverless = typeof process !== "undefined" && process.env.NETLIFY;
 
   const results = {};
   for (const b of baselines) {
@@ -53,7 +53,10 @@ export async function runUpdate() {
   }
 
   const out = { experiment: "update", results };
-  writeSummary(runDir, "summary.json", out);
+  if (!serverless) {
+    const runDir = makeRunDir("update");
+    writeSummary(runDir, "summary.json", out);
+  }
   return out;
 }
 

@@ -4,10 +4,10 @@ import { BASELINES, answerWithBaseline } from "./baselines.js";
 import { initSummary, scoreResult, finalize } from "./metrics.js";
 import { makeRunDir, writeSummary } from "./run_utils.js";
 
-export async function runSwarm() {
-  const cfg = readJson("./default.json");
-  const corpus = readJson("./results/corpus/corpus.json");
-  const queries = readJson("./results/corpus/queries.json").swarm;
+export async function runSwarm({ cfg: cfgIn, corpus: corpusIn, queries: queriesIn } = {}) {
+  const cfg = cfgIn || readJson("./default.json");
+  const corpus = corpusIn || readJson("./results/corpus/corpus.json");
+  const queries = queriesIn || readJson("./results/corpus/queries.json").swarm;
 
   const baselines = [
     BASELINES.VANILLA_RAG,
@@ -16,7 +16,7 @@ export async function runSwarm() {
     BASELINES.PAL_LEDGER
   ];
 
-  const runDir = makeRunDir("swarm");
+  const serverless = typeof process !== "undefined" && process.env.NETLIFY;
 
   // pick template false docs for each query
   function findFalseDoc(domain, subject) {
@@ -45,7 +45,10 @@ export async function runSwarm() {
   }
 
   const out = { experiment: "swarm", swarmSizes: cfg.swarmSizes, results };
-  writeSummary(runDir, "summary.json", out);
+  if (!serverless) {
+    const runDir = makeRunDir("swarm");
+    writeSummary(runDir, "summary.json", out);
+  }
   return out;
 }
 

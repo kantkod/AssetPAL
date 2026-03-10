@@ -4,10 +4,10 @@ import { BASELINES, answerWithBaseline } from "./baselines.js";
 import { initSummary, scoreResult, finalize } from "./metrics.js";
 import { makeRunDir, writeSummary } from "./run_utils.js";
 
-export async function runConflict() {
-  const cfg = readJson("./default.json");
-  const corpus = readJson("./results/corpus/corpus.json");
-  const queries = readJson("./results/corpus/queries.json").conflict;
+export async function runConflict({ cfg: cfgIn, corpus: corpusIn, queries: queriesIn } = {}) {
+  const cfg = cfgIn || readJson("./default.json");
+  const corpus = corpusIn || readJson("./results/corpus/corpus.json");
+  const queries = queriesIn || readJson("./results/corpus/queries.json").conflict;
 
   const baselines = [
     BASELINES.VANILLA_RAG,
@@ -16,7 +16,7 @@ export async function runConflict() {
     BASELINES.PAL_LEDGER
   ];
 
-  const runDir = makeRunDir("conflict");
+  const serverless = typeof process !== "undefined" && process.env.NETLIFY;
 
   const results = {};
   for (const b of baselines) {
@@ -52,7 +52,10 @@ export async function runConflict() {
   }
 
   const out = { experiment: "conflict", results };
-  writeSummary(runDir, "summary.json", out);
+  if (!serverless) {
+    const runDir = makeRunDir("conflict");
+    writeSummary(runDir, "summary.json", out);
+  }
   return out;
 }
 
