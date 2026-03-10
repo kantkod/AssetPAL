@@ -16,7 +16,7 @@ function claim(domain, subject, value, timestamp, source, reliability, docId){
   };
 }
 
-export async function generateCorpus(configPath = "./configs/default.json") {
+export async function generateCorpus(configPath = "./default.json") {
   const cfg = readJson(configPath);
   const rand = makeRng(cfg.seed);
 

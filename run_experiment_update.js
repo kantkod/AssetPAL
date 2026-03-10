@@ -9,7 +9,7 @@ function filterDocsByTime(docs, nowTs) {
 }
 
 export async function runUpdate() {
-  const cfg = readJson("./configs/default.json");
+  const cfg = readJson("./default.json");
   const corpus = readJson("./results/corpus/corpus.json");
   const queries = readJson("./results/corpus/queries.json").update;
 

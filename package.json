@@ -5,10 +5,10 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "gen": "node src/generate_corpus.js",
-    "run:conflict": "node src/run_experiment_conflict.js",
-    "run:update": "node src/run_experiment_update.js",
-    "run:swarm": "node src/run_experiment_swarm.js",
-    "run:all": "node src/run_all.js"
+    "gen": "node generate_corpus.js",
+    "run:conflict": "node run_experiment_conflict.js",
+    "run:update": "node run_experiment_update.js",
+    "run:swarm": "node run_experiment_swarm.js",
+    "run:all": "node run_all.js"
   }
 }
