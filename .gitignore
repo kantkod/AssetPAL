@@ -2,3 +2,4 @@ node_modules/
 public/
 results/
 results.json
+netlify/functions/_data.js
