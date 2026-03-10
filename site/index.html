@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AssetPAL - RAG Truth-Maintenance Benchmark</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #242736;
+      --border: #2e3244;
+      --text: #e4e6f0;
+      --text-dim: #8b8fa3;
+      --accent: #6c5ce7;
+      --accent2: #00cec9;
+      --green: #00b894;
+      --red: #e17055;
+      --orange: #fdcb6e;
+      --blue: #74b9ff;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+    .container { max-width: 1200px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+    /* Header */
+    header {
+      text-align: center;
+      padding: 3rem 0 2rem;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 2rem;
+    }
+    header h1 {
+      font-size: 2.2rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    header p { color: var(--text-dim); margin-top: 0.5rem; font-size: 1.05rem; }
+
+    /* Score banner */
+    .score-banner {
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+      flex-wrap: wrap;
+      margin-bottom: 2.5rem;
+    }
+    .score-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem 2rem;
+      text-align: center;
+      min-width: 180px;
+    }
+    .score-card .label { font-size: 0.85rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; }
+    .score-card .value { font-size: 2.5rem; font-weight: 700; margin-top: 0.3rem; }
+    .score-card .value.green { color: var(--green); }
+    .score-card .value.accent { color: var(--accent); }
+    .score-card .value.blue { color: var(--blue); }
+
+    /* Section */
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem 2rem;
+      margin-bottom: 2rem;
+    }
+    .section h2 {
+      font-size: 1.3rem;
+      margin-bottom: 0.3rem;
+    }
+    .section .desc {
+      color: var(--text-dim);
+      font-size: 0.9rem;
+      margin-bottom: 1.2rem;
+    }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+    th, td {
+      padding: 0.65rem 1rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    th {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      letter-spacing: 0.05em;
+      font-weight: 600;
+    }
+    td { font-size: 0.95rem; }
+    tr:last-child td { border-bottom: none; }
+    .best { color: var(--green); font-weight: 600; }
+    .worst { color: var(--red); }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+    .badge-pal { background: rgba(108,92,231,0.2); color: var(--accent); }
+    .badge-vanilla { background: rgba(116,185,255,0.2); color: var(--blue); }
+    .badge-majority { background: rgba(253,203,110,0.2); color: var(--orange); }
+    .badge-rerank { background: rgba(0,206,201,0.2); color: var(--accent2); }
+
+    /* Charts */
+    .chart-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      margin-top: 1.2rem;
+    }
+    .chart-box {
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    .chart-box canvas { max-height: 300px; }
+
+    /* Info section */
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem;
+      margin-top: 1rem;
+    }
+    .info-card {
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 1.2rem;
+    }
+    .info-card h3 { font-size: 1rem; margin-bottom: 0.5rem; }
+    .info-card ul { list-style: none; }
+    .info-card li { padding: 0.2rem 0; color: var(--text-dim); font-size: 0.9rem; }
+    .info-card li::before { content: "- "; color: var(--accent); }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 2rem 0;
+      color: var(--text-dim);
+      font-size: 0.85rem;
+      border-top: 1px solid var(--border);
+      margin-top: 2rem;
+    }
+
+    /* Loading state */
+    #loading {
+      text-align: center;
+      padding: 4rem 0;
+    }
+    .spinner {
+      width: 40px; height: 40px;
+      border: 3px solid var(--border);
+      border-top: 3px solid var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 1rem;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 768px) {
+      .chart-row { grid-template-columns: 1fr; }
+      .score-banner { flex-direction: column; align-items: center; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <h1>AssetPAL</h1>
+    <p>RAG Truth-Maintenance Benchmark &mdash; Comparing retrieval strategies under adversarial conditions</p>
+  </header>
+
+  <div id="loading">
+    <div class="spinner"></div>
+    <p>Loading results...</p>
+  </div>
+
+  <div id="app" style="display:none;">
+    <!-- Score Banner -->
+    <div class="score-banner" id="scoreBanner"></div>
+
+    <!-- Experiment 1: Conflict -->
+    <div class="section">
+      <h2>Experiment 1: Conflict Resolution</h2>
+      <p class="desc">Can each baseline correctly answer when both true and false evidence appear in retrieved documents?</p>
+      <div id="conflictTable"></div>
+      <div class="chart-row">
+        <div class="chart-box"><canvas id="conflictChart"></canvas></div>
+        <div class="chart-box"><canvas id="conflictGoodChart"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Experiment 2: Temporal Update -->
+    <div class="section">
+      <h2>Experiment 2: Temporal Updates</h2>
+      <p class="desc">When policies change over time, does the system adopt the newer truth or regress to old values?</p>
+      <div id="updateTable"></div>
+      <div class="chart-row">
+        <div class="chart-box"><canvas id="updateChart"></canvas></div>
+        <div class="chart-box"><canvas id="adoptionChart"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Experiment 3: Swarm -->
+    <div class="section">
+      <h2>Experiment 3: Near-Duplicate Swarm Attack</h2>
+      <p class="desc">Adversarial near-duplicate documents flood the retrieval pool. How resilient is each baseline?</p>
+      <div id="swarmTable"></div>
+      <div class="chart-row" style="grid-template-columns: 1fr;">
+        <div class="chart-box"><canvas id="swarmChart"></canvas></div>
+      </div>
+    </div>
+
+    <!-- How It Works -->
+    <div class="section">
+      <h2>How It Works</h2>
+      <div class="info-grid">
+        <div class="info-card">
+          <h3>Baselines</h3>
+          <ul>
+            <li><strong>Vanilla RAG</strong> &mdash; picks first matching claim</li>
+            <li><strong>Majority Vote</strong> &mdash; counts most common value</li>
+            <li><strong>Rerank (Rel+Time)</strong> &mdash; ranks by reliability &times; recency</li>
+            <li><strong>PAL Ledger</strong> &mdash; truth ledger with conflict detection</li>
+          </ul>
+        </div>
+        <div class="info-card">
+          <h3>Experiments</h3>
+          <ul>
+            <li><strong>Conflict</strong> &mdash; true vs false evidence mixed in retrieval</li>
+            <li><strong>Update</strong> &mdash; old policy replaced by new policy</li>
+            <li><strong>Swarm</strong> &mdash; adversarial near-duplicate flooding</li>
+          </ul>
+        </div>
+        <div class="info-card">
+          <h3>Configuration</h3>
+          <ul>
+            <li>Seed: 42 (deterministic results)</li>
+            <li>Domains: HR, Security, Pricing, Support</li>
+            <li>Top-K retrieval: 6 documents</li>
+            <li>Swarm sizes: 0, 2, 5, 10, 20, 40</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    AssetPAL &mdash; RAG Truth-Maintenance Research
+  </footer>
+</div>
+
+<script>
+/*__RESULTS_PLACEHOLDER__*/
+
+const BASELINE_LABELS = {
+  VANILLA_RAG: "Vanilla RAG",
+  MAJORITY_VOTE: "Majority Vote",
+  RERANK_REL_TIME: "Rerank (Rel+Time)",
+  PAL_LEDGER: "PAL Ledger"
+};
+const BASELINE_ORDER = ["VANILLA_RAG", "MAJORITY_VOTE", "RERANK_REL_TIME", "PAL_LEDGER"];
+const COLORS = {
+  VANILLA_RAG: "#74b9ff",
+  MAJORITY_VOTE: "#fdcb6e",
+  RERANK_REL_TIME: "#00cec9",
+  PAL_LEDGER: "#6c5ce7"
+};
+const BADGE_CLASS = {
+  VANILLA_RAG: "badge-vanilla",
+  MAJORITY_VOTE: "badge-majority",
+  RERANK_REL_TIME: "badge-rerank",
+  PAL_LEDGER: "badge-pal"
+};
+
+function pct(v) { return (v * 100).toFixed(1) + "%"; }
+
+function render(data) {
+  document.getElementById("loading").style.display = "none";
+  document.getElementById("app").style.display = "";
+
+  // Score banner
+  const banner = document.getElementById("scoreBanner");
+  const palConflict = data.results.conflict?.PAL_LEDGER;
+  const palUpdate = data.results.update?.PAL_LEDGER;
+  banner.innerHTML = `
+    <div class="score-card">
+      <div class="label">Overall PAL Score</div>
+      <div class="value green">${pct(data.score)}</div>
+    </div>
+    <div class="score-card">
+      <div class="label">Conflict Accuracy (PAL)</div>
+      <div class="value accent">${palConflict ? pct(palConflict.accuracy) : "N/A"}</div>
+    </div>
+    <div class="score-card">
+      <div class="label">Update Adoption (PAL)</div>
+      <div class="value blue">${palUpdate ? pct(palUpdate.adopted_new_rate) : "N/A"}</div>
+    </div>
+  `;
+
+  // Conflict table
+  renderConflictTable(data.results.conflict);
+  renderConflictCharts(data.results.conflict);
+
+  // Update table
+  renderUpdateTable(data.results.update);
+  renderUpdateCharts(data.results.update);
+
+  // Swarm table + chart
+  renderSwarmTable(data.results.swarm);
+  renderSwarmChart(data.results.swarm);
+}
+
+function renderConflictTable(conflict) {
+  const container = document.getElementById("conflictTable");
+  let html = `<table>
+    <tr><th>Baseline</th><th>Accuracy</th><th>Correct</th><th>Wrong</th><th>Conflict Good Rate</th><th>Wrong + Confident</th></tr>`;
+  const accs = BASELINE_ORDER.map(b => conflict[b]?.accuracy ?? 0);
+  const maxAcc = Math.max(...accs);
+  for (const b of BASELINE_ORDER) {
+    const s = conflict[b];
+    if (!s) continue;
+    const isBest = s.accuracy === maxAcc;
+    html += `<tr>
+      <td><span class="badge ${BADGE_CLASS[b]}">${BASELINE_LABELS[b]}</span></td>
+      <td class="${isBest ? 'best' : ''}">${pct(s.accuracy)}</td>
+      <td>${s.correct}/${s.total}</td>
+      <td class="${s.wrong > 0 ? 'worst' : ''}">${s.wrong}</td>
+      <td>${pct(s.conflict_good_rate)}</td>
+      <td class="${s.wrong_confident > 0 ? 'worst' : ''}">${s.wrong_confident}</td>
+    </tr>`;
+  }
+  html += `</table>`;
+  container.innerHTML = html;
+}
+
+function renderConflictCharts(conflict) {
+  const labels = BASELINE_ORDER.map(b => BASELINE_LABELS[b]);
+  const colors = BASELINE_ORDER.map(b => COLORS[b]);
+
+  new Chart(document.getElementById("conflictChart"), {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [{
+        label: "Accuracy",
+        data: BASELINE_ORDER.map(b => ((conflict[b]?.accuracy ?? 0) * 100)),
+        backgroundColor: colors,
+        borderRadius: 6
+      }]
+    },
+    options: chartOpts("Accuracy (%)")
+  });
+
+  new Chart(document.getElementById("conflictGoodChart"), {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [{
+        label: "Conflict Good Rate",
+        data: BASELINE_ORDER.map(b => ((conflict[b]?.conflict_good_rate ?? 0) * 100)),
+        backgroundColor: colors,
+        borderRadius: 6
+      }]
+    },
+    options: chartOpts("Conflict Good Rate (%)")
+  });
+}
+
+function renderUpdateTable(update) {
+  const container = document.getElementById("updateTable");
+  let html = `<table>
+    <tr><th>Baseline</th><th>Accuracy</th><th>Adopted New</th><th>Adoption Rate</th><th>Regression Rate</th></tr>`;
+  const accs = BASELINE_ORDER.map(b => update[b]?.adopted_new_rate ?? 0);
+  const maxAcc = Math.max(...accs);
+  for (const b of BASELINE_ORDER) {
+    const s = update[b];
+    if (!s) continue;
+    const isBest = s.adopted_new_rate === maxAcc;
+    html += `<tr>
+      <td><span class="badge ${BADGE_CLASS[b]}">${BASELINE_LABELS[b]}</span></td>
+      <td>${pct(s.accuracy)}</td>
+      <td>${s.adopted_new}/${s.t1_total}</td>
+      <td class="${isBest ? 'best' : ''}">${pct(s.adopted_new_rate)}</td>
+      <td class="${s.regression_rate > 0 ? 'worst' : ''}">${pct(s.regression_rate)}</td>
+    </tr>`;
+  }
+  html += `</table>`;
+  container.innerHTML = html;
+}
+
+function renderUpdateCharts(update) {
+  const labels = BASELINE_ORDER.map(b => BASELINE_LABELS[b]);
+  const colors = BASELINE_ORDER.map(b => COLORS[b]);
+
+  new Chart(document.getElementById("updateChart"), {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [{
+        label: "Overall Accuracy",
+        data: BASELINE_ORDER.map(b => ((update[b]?.accuracy ?? 0) * 100)),
+        backgroundColor: colors,
+        borderRadius: 6
+      }]
+    },
+    options: chartOpts("Accuracy (%)")
+  });
+
+  new Chart(document.getElementById("adoptionChart"), {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [{
+        label: "Adoption Rate",
+        data: BASELINE_ORDER.map(b => ((update[b]?.adopted_new_rate ?? 0) * 100)),
+        backgroundColor: colors,
+        borderRadius: 6
+      }]
+    },
+    options: chartOpts("New-Truth Adoption (%)")
+  });
+}
+
+function renderSwarmTable(swarm) {
+  const container = document.getElementById("swarmTable");
+  // Get swarm sizes from first baseline
+  const firstBaseline = swarm[BASELINE_ORDER[0]];
+  const sizes = Object.keys(firstBaseline).map(k => k.replace("swarm_", "")).map(Number);
+
+  let html = `<table><tr><th>Baseline</th>`;
+  for (const s of sizes) html += `<th>Swarm ${s}</th>`;
+  html += `</tr>`;
+
+  for (const b of BASELINE_ORDER) {
+    html += `<tr><td><span class="badge ${BADGE_CLASS[b]}">${BASELINE_LABELS[b]}</span></td>`;
+    for (const s of sizes) {
+      const entry = swarm[b]?.[`swarm_${s}`];
+      const acc = entry?.accuracy ?? 0;
+      const cls = acc >= 0.9 ? 'best' : acc < 0.4 ? 'worst' : '';
+      html += `<td class="${cls}">${pct(acc)}</td>`;
+    }
+    html += `</tr>`;
+  }
+  html += `</table>`;
+  container.innerHTML = html;
+}
+
+function renderSwarmChart(swarm) {
+  const firstBaseline = swarm[BASELINE_ORDER[0]];
+  const sizes = Object.keys(firstBaseline).map(k => k.replace("swarm_", "")).map(Number);
+
+  const datasets = BASELINE_ORDER.map(b => ({
+    label: BASELINE_LABELS[b],
+    data: sizes.map(s => ((swarm[b]?.[`swarm_${s}`]?.accuracy ?? 0) * 100)),
+    borderColor: COLORS[b],
+    backgroundColor: COLORS[b] + "33",
+    tension: 0.3,
+    pointRadius: 5,
+    pointHoverRadius: 7,
+    fill: false
+  }));
+
+  new Chart(document.getElementById("swarmChart"), {
+    type: "line",
+    data: {
+      labels: sizes.map(s => `${s} dupes`),
+      datasets
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { labels: { color: "#e4e6f0" } }
+      },
+      scales: {
+        x: { ticks: { color: "#8b8fa3" }, grid: { color: "#2e3244" } },
+        y: {
+          min: 0, max: 105,
+          title: { display: true, text: "Accuracy (%)", color: "#8b8fa3" },
+          ticks: { color: "#8b8fa3" },
+          grid: { color: "#2e3244" }
+        }
+      }
+    }
+  });
+}
+
+function chartOpts(yLabel) {
+  return {
+    responsive: true,
+    plugins: {
+      legend: { display: false }
+    },
+    scales: {
+      x: { ticks: { color: "#8b8fa3" }, grid: { color: "#2e3244" } },
+      y: {
+        min: 0, max: 105,
+        title: { display: true, text: yLabel, color: "#8b8fa3" },
+        ticks: { color: "#8b8fa3" },
+        grid: { color: "#2e3244" }
+      }
+    }
+  };
+}
+
+// Boot
+if (window.__RESULTS__) {
+  render(window.__RESULTS__);
+} else {
+  document.getElementById("loading").innerHTML = `
+    <p style="color: var(--red);">No results data found. Run the build to generate results.</p>
+  `;
+}
+</script>
+
+</body>
+</html>

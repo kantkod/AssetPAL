@@ -1,5 +1,5 @@
 import fs from "fs";
-import { runAll } from "./src/run_all.js";
+import { runAll } from "./run_all.js";
 
 function overallScore(results){
   // Use PAL_LEDGER performance primarily; fall back to average correct/total across all if missing.

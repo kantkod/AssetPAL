@@ -5,7 +5,7 @@ import { initSummary, scoreResult, finalize } from "./metrics.js";
 import { makeRunDir, writeSummary } from "./run_utils.js";
 
 export async function runSwarm() {
-  const cfg = readJson("./configs/default.json");
+  const cfg = readJson("./default.json");
   const corpus = readJson("./results/corpus/corpus.json");
   const queries = readJson("./results/corpus/queries.json").swarm;
 
