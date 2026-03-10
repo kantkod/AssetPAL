@@ -6,7 +6,11 @@ export function initSummary() {
     conflict_marked: 0,
     uncertain: 0,
     no_answer: 0,
-    wrong_confident: 0
+    wrong_confident: 0,
+    wrong_false: 0,
+    wrong_v0: 0,
+    wrong_v1: 0,
+    wrong_other: 0
   };
 }
 
@@ -33,6 +37,12 @@ export function scoreResult(summary, query, result) {
   } else {
     summary.wrong += 1;
     if ((result.confidence ?? 0) >= 0.7) summary.wrong_confident += 1;
+
+    const v = String(result.value || "");
+    if (v.startsWith("FALSE_")) summary.wrong_false += 1;
+    else if (v.startsWith("v0_")) summary.wrong_v0 += 1;
+    else if (v.startsWith("v1_")) summary.wrong_v1 += 1;
+    else summary.wrong_other += 1;
   }
 }
 

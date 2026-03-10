@@ -29,14 +29,18 @@ export function retrieveTopK(docs, query, topK = 6, seed = 1) {
   return scored.map(s => s.doc);
 }
 
-export function makeSwarmDocs(baseFalseDoc, swarmSize, mode = "plain", nowTs = null) {
+export function makeSwarmDocs(baseFalseDoc, swarmSize, mode = "plain", nowTs = null, query = null, baitStrength = 2) {
   const out = [];
+  const bait = query
+    ? (` ${query.question || ""} ${query.domain || ""} ${query.subject || ""} ${query.scope?.region || ""} ${query.scope?.tier || ""} ${query.scope?.product || ""} `).repeat(baitStrength)
+    : "";
+
   for (let i = 0; i < swarmSize; i++) {
     const spoof = mode === "spoof";
     out.push({
       ...baseFalseDoc,
       id: `${baseFalseDoc.id}_${mode.toUpperCase()}_SWARM_${i}`,
-      text: `${baseFalseDoc.text} (${mode} duplicate ${i})`,
+      text: `${baseFalseDoc.text}${bait} (${mode} duplicate ${i})`,
       source: spoof ? "PolicyPortal" : baseFalseDoc.source,
       reliability: spoof ? 0.92 + (i % 3) * 0.02 : Math.max(0.4, Math.min(0.7, (baseFalseDoc.reliability ?? 0.6) + ((i % 5) - 2) * 0.01)),
       timestamp: spoof ? ((nowTs ?? baseFalseDoc.timestamp) + 5) : baseFalseDoc.timestamp,
