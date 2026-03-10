@@ -42,6 +42,12 @@ async function build() {
   );
   fs.writeFileSync("./public/index.html", finalHtml);
 
+  // Bundle corpus and config as static assets for the Netlify Function
+  fs.mkdirSync("./public/data", { recursive: true });
+  fs.copyFileSync("./results/corpus/corpus.json", "./public/data/corpus.json");
+  fs.copyFileSync("./results/corpus/queries.json", "./public/data/queries.json");
+  fs.copyFileSync("./default.json", "./public/data/config.json");
+
   console.log("Build complete. Score:", score);
 }
 
