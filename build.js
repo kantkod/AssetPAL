@@ -42,11 +42,22 @@ async function build() {
   );
   fs.writeFileSync("./public/index.html", finalHtml);
 
-  // Bundle corpus and config as static assets for the Netlify Function
+  // Bundle corpus and config as static assets
   fs.mkdirSync("./public/data", { recursive: true });
   fs.copyFileSync("./results/corpus/corpus.json", "./public/data/corpus.json");
   fs.copyFileSync("./results/corpus/queries.json", "./public/data/queries.json");
   fs.copyFileSync("./default.json", "./public/data/config.json");
+
+  // Generate inline data module for Netlify Function (avoids self-fetch)
+  const corpusData = fs.readFileSync("./results/corpus/corpus.json", "utf8");
+  const queriesData = fs.readFileSync("./results/corpus/queries.json", "utf8");
+  const configData = fs.readFileSync("./default.json", "utf8");
+  fs.mkdirSync("./netlify/functions", { recursive: true });
+  fs.writeFileSync("./netlify/functions/_data.js",
+    `export const corpus = ${corpusData};\n` +
+    `export const queries = ${queriesData};\n` +
+    `export const config = ${configData};\n`
+  );
 
   console.log("Build complete. Score:", score);
 }
