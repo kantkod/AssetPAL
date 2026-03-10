@@ -20,6 +20,12 @@
     "plain",
     "spoof"
   ],
+  "baitStrength": 3,
+  "debugQueryId": null,
+  "debugExperiment": null,
+  "debugSwarmMode": "plain",
+  "debugSwarmSize": 2,
+  "debugPrintDocs": false,
   "cyEnabled": true,
   "cySigma": 1.0,
   "cyBeta": 1.0,

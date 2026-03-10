@@ -9,6 +9,58 @@ const BASELINE_LIST = [
   BASELINES.PAL_LEDGER
 ];
 
+function debugEnabledFor(cfg, experimentName, q) {
+  return cfg?.debugQueryId && cfg.debugExperiment === experimentName && cfg.debugQueryId === q.id;
+}
+
+function claimValueForDoc(doc, q) {
+  const claim = (doc.claims || []).find(c => c.domain === q.domain && c.subject === q.subject);
+  return claim?.value;
+}
+
+function printDebugTrace({ cfg, experimentName, q, top, baseline, result, swarmMode, swarmSize }) {
+  const shouldDebug = debugEnabledFor(cfg, experimentName, q);
+  if (!shouldDebug) return;
+
+  if (experimentName === "swarm") {
+    if (swarmMode !== cfg.debugSwarmMode || swarmSize !== cfg.debugSwarmSize) return;
+  }
+
+  const docs = top.map(d => ({
+    id: d.id,
+    source: d.source,
+    timestamp: d.timestamp,
+    reliability: d.reliability,
+    claimValue: claimValueForDoc(d, q)
+  }));
+
+  console.log("[DEBUG QUERY]", {
+    experiment: experimentName,
+    baseline,
+    swarmMode,
+    swarmSize,
+    id: q.id,
+    question: q.question,
+    expected: q.expected,
+    domain: q.domain,
+    subject: q.subject,
+    nowTs: q.nowTs,
+    scope: q.scope
+  });
+
+  if (cfg.debugPrintDocs) {
+    console.log("[DEBUG TOPK]", JSON.stringify(docs, null, 2));
+  }
+
+  console.log("[DEBUG BASELINE RESULT]", {
+    baseline,
+    status: result.status,
+    value: result.value,
+    confidence: result.confidence,
+    evidence: result.evidence
+  });
+}
+
 export function runConflictCore(cfg, corpus, queries) {
   const results = {};
   for (const b of BASELINE_LIST) {
@@ -19,6 +71,8 @@ export function runConflictCore(cfg, corpus, queries) {
     for (const q of queries) {
       const top = retrieveTopK(corpus.docs, q, cfg.topK, cfg.seed + q.nowTs);
       const r = answerWithBaseline(b, cfg, top, q);
+
+      printDebugTrace({ cfg, experimentName: "conflict", q, top, baseline: b, result: r });
 
       const hasTrue = top.some(d => (d.claims || []).some(c => c.subject === q.subject && c.value === q.expected));
       const hasFalse = top.some(d => (d.claims || []).some(c => c.subject === q.subject && c.value?.startsWith("FALSE_")));
@@ -73,6 +127,8 @@ export function runUpdateCore(cfg, corpus, queries) {
       const visibleDocs = filterDocsByTime(corpus.docs, q.nowTs);
       const top = retrieveTopK(visibleDocs, q, cfg.topK, cfg.seed + q.nowTs + 77);
       const r = answerWithBaseline(b, cfg, top, q);
+
+      printDebugTrace({ cfg, experimentName: "update", q, top, baseline: b, result: r });
 
       if (q.phase === "t1") {
         newTotal++;
@@ -130,11 +186,24 @@ export function runSwarmCore(cfg, corpus, queries) {
         for (const q of queries) {
           const visibleDocs = filterDocsByTime(corpus.docs, q.nowTs);
           const falseDoc = findFalseDoc(visibleDocs, q.domain, q.subject);
-          const swarm = falseDoc ? makeSwarmDocs(falseDoc, swarmSize, swarmMode, q.nowTs) : [];
+          const swarm = falseDoc
+            ? makeSwarmDocs(falseDoc, swarmSize, swarmMode, q.nowTs, q, cfg.baitStrength)
+            : [];
           const docsWithSwarm = visibleDocs.concat(swarm);
 
           const top = retrieveTopK(docsWithSwarm, q, cfg.topK, cfg.seed + swarmSize + q.nowTs);
           const r = answerWithBaseline(b, cfg, top, q);
+
+          printDebugTrace({
+            cfg,
+            experimentName: "swarm",
+            q,
+            top,
+            baseline: b,
+            result: r,
+            swarmMode,
+            swarmSize
+          });
 
           scoreResult(sum, q, r);
         }

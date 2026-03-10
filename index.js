@@ -1,36 +1,67 @@
 import fs from "fs";
 import { runAll } from "./run_all.js";
 
-function overallScore(results){
-  // Use PAL_LEDGER performance primarily; fall back to average correct/total across all if missing.
-  let total=0, correct=0;
-  for (const expName of Object.keys(results)){
+function pickPalSummary(exp) {
+  return exp["PAL_LEDGER"] || exp["pal_ledger"] || exp["PAL"] || null;
+}
+
+function effectiveAccuracy(experimentName, summary) {
+  if (!summary || typeof summary.total !== "number" || summary.total === 0) return null;
+
+  if (experimentName === "conflict") {
+    const effectiveCorrect = (summary.correct || 0) + (summary.conflict_good || 0);
+    return effectiveCorrect / summary.total;
+  }
+
+  const answered = summary.answered ?? ((summary.correct || 0) + (summary.wrong || 0));
+  const accuracyAnswered = summary.accuracy_answered ?? (answered ? (summary.correct || 0) / answered : 0);
+  const coverage = summary.coverage ?? (summary.total ? answered / summary.total : 0);
+  return accuracyAnswered * coverage;
+}
+
+function average(values) {
+  if (!values.length) return 0;
+  return values.reduce((a, b) => a + b, 0) / values.length;
+}
+
+function overallScore(results) {
+  const experimentAccuracies = [];
+
+  for (const expName of Object.keys(results)) {
     const exp = results[expName];
     if (!exp) continue;
-    // exp is a map baselineName -> summary
-    const pal = exp["PAL_LEDGER"] || exp["pal_ledger"] || exp["PAL"] || null;
-    const use = pal || null;
-    if (use && typeof use.total==="number"){
-      total += use.total;
-      correct += use.correct || 0;
-    } else {
-      for (const b of Object.keys(exp)){
-        const s = exp[b];
-        if (s && typeof s.total==="number"){
-          total += s.total;
-          correct += s.correct || 0;
-        }
-      }
+
+    if (expName === "swarm") {
+      const pal = pickPalSummary(exp);
+      const target = pal || Object.values(exp)[0];
+      if (!target) continue;
+
+      const scenarioAcc = Object.values(target)
+        .map(summary => effectiveAccuracy("swarm", summary))
+        .filter(v => v !== null);
+      if (scenarioAcc.length) experimentAccuracies.push(average(scenarioAcc));
+      continue;
     }
+
+    const palSummary = pickPalSummary(exp);
+    if (palSummary) {
+      const acc = effectiveAccuracy(expName, palSummary);
+      if (acc !== null) experimentAccuracies.push(acc);
+      continue;
+    }
+
+    const baselineAcc = Object.values(exp)
+      .map(summary => effectiveAccuracy(expName, summary))
+      .filter(v => v !== null);
+    if (baselineAcc.length) experimentAccuracies.push(average(baselineAcc));
   }
-  return total>0 ? correct/total : 0;
+
+  return average(experimentAccuracies);
 }
 
 (async () => {
   const results = await runAll();
   const out = { score: overallScore(results), results };
-  // Write a machine-readable file for any UI runner that expects a single JSON artifact.
   fs.writeFileSync("./results.json", JSON.stringify(out));
-  // IMPORTANT: print ONLY JSON to stdout (some UIs require this)
   console.log(JSON.stringify(out));
 })();
