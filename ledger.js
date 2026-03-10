@@ -3,8 +3,7 @@ import { torusWeight, projectToTorus } from "./torus.js";
 export class TruthLedger {
   constructor(cfg) {
     this.cfg = cfg;
-    this.claims = []; 
-    // claim: {domain, subject, value, timestamp, source, reliability, docId, theta, weight}
+    this.claims = [];
   }
 
   upsertClaim(claim) {
@@ -12,54 +11,100 @@ export class TruthLedger {
     this.claims.push({ ...claim, weight: baseW });
   }
 
-  query(domain, subject, nowTs) {
+  query(domain, subject, nowTs, queryScope = null) {
     const cfg = this.cfg;
     const qTheta = projectToTorus(domain, subject);
     const candidates = this.claims.filter(c => c.domain === domain && c.subject === subject);
+
+    const sourceCounts = new Map();
+    const signatureCounts = new Map();
+    for (const c of candidates) {
+      const sourceKey = c.source ?? "unknown";
+      sourceCounts.set(sourceKey, (sourceCounts.get(sourceKey) || 0) + 1);
+      const sigKey = `${c.source ?? "unknown"}|${c.timestamp}|${String(c.value)}`;
+      signatureCounts.set(sigKey, (signatureCounts.get(sigKey) || 0) + 1);
+    }
 
     const scored = candidates.map(c => {
       let w = c.weight;
 
       w *= Math.pow((c.reliability ?? 0.5), cfg.reliabilityWeight);
 
-      const dt = (nowTs - c.timestamp);
+      const dt = nowTs - c.timestamp;
       const timeBoost = 1 / (1 + Math.max(0, dt));
       w *= Math.pow(timeBoost, cfg.timeWeight);
+      if (c.timestamp > nowTs) {
+        w *= (cfg.futureTimestampPenalty ?? 0.1);
+      }
 
-      let geoW = 1.0;
       if (cfg.cyEnabled && c.theta) {
-        geoW = torusWeight(qTheta, c.theta, cfg.cySigma);
+        let geoW = torusWeight(qTheta, c.theta, cfg.cySigma);
         geoW = Math.pow(geoW, cfg.cyBeta);
         w *= geoW;
       }
-      return { ...c, score: w, geoW };
+
+      const scopeWeight = scopeMatchWeight(c.scope, queryScope, cfg);
+      w *= scopeWeight;
+
+      const maxSameSourceInfluence = cfg.maxSameSourceInfluence ?? 3;
+      const sourceCount = sourceCounts.get(c.source ?? "unknown") || 1;
+      const sourcePenalty = Math.min(1, maxSameSourceInfluence / sourceCount);
+      w *= sourcePenalty;
+
+      const sigCount = signatureCounts.get(`${c.source ?? "unknown"}|${c.timestamp}|${String(c.value)}`) || 1;
+      const swarmSignaturePenalty = cfg.swarmSignaturePenalty ?? 0.2;
+      const signaturePenalty = 1 / (1 + Math.max(0, sigCount - 1) * swarmSignaturePenalty);
+      w *= signaturePenalty;
+
+      return { ...c, score: w };
     });
 
-    scored.sort((a,b) => b.score - a.score);
+    scored.sort((a, b) => b.score - a.score);
     return scored;
   }
 
-  decide(domain, subject, nowTs) {
+  decide(domain, subject, nowTs, queryScope = null) {
     const cfg = this.cfg;
-    const scored = this.query(domain, subject, nowTs);
-    if (scored.length === 0) return { status:"NO_EVIDENCE", confidence:0, picks:[] };
+    const scored = this.query(domain, subject, nowTs, queryScope);
+    if (scored.length === 0) return { status: "NO_EVIDENCE", confidence: 0, picks: [] };
 
     const top = scored[0];
     const second = scored[1];
 
     if (!second) {
-      return { status:"SINGLE", confidence: clamp01(top.score), picks:[top] };
+      const stableConf = clamp01(0.55 + 0.45 * (top.reliability ?? 0.5));
+      return { status: "SINGLE", confidence: stableConf, picks: [top] };
     }
 
-    const conflict = (top.value !== second.value);
+    const conflict = top.value !== second.value;
     const dominance = top.score / (top.score + second.score + 1e-9);
 
     if (conflict && dominance < (1 - cfg.contradictionThreshold)) {
-      return { status:"CONFLICT", confidence: clamp01(dominance), picks:[top, second] };
+      return { status: "CONFLICT", confidence: clamp01(dominance), picks: [top, second] };
     }
 
-    return { status:"RESOLVED", confidence: clamp01(dominance), picks:[top] };
+    return { status: "RESOLVED", confidence: clamp01(dominance), picks: [top] };
   }
 }
 
-function clamp01(x){ return Math.max(0, Math.min(1, x)); }
+function scopeMatchWeight(claimScope, queryScope, cfg) {
+  if (!queryScope || Object.keys(queryScope).length === 0) return cfg.scopeUnknownPenalty ?? 0.6;
+  if (!claimScope) return cfg.scopeUnknownPenalty ?? 0.6;
+
+  const dims = ["region", "tier", "product"];
+  let known = 0;
+  let matched = 0;
+  for (const k of dims) {
+    const qv = queryScope[k];
+    const cv = claimScope[k];
+    if (qv == null || qv === "") continue;
+    known += 1;
+    if (cv === "*" || cv == null || cv === qv) matched += 1;
+  }
+
+  if (!known) return cfg.scopeUnknownPenalty ?? 0.6;
+  if (matched === known) return 1.0;
+  return cfg.scopeMismatchPenalty ?? 0.05;
+}
+
+function clamp01(x) { return Math.max(0, Math.min(1, x)); }

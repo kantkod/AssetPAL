@@ -16,11 +16,20 @@
     20,
     40
   ],
+  "swarmModes": [
+    "plain",
+    "spoof"
+  ],
   "cyEnabled": true,
   "cySigma": 1.0,
   "cyBeta": 1.0,
   "reliabilityWeight": 1.0,
   "timeWeight": 1.2,
   "contradictionThreshold": 0.35,
-  "confidenceThreshold": 0.65
+  "confidenceThreshold": 0.65,
+  "scopeMismatchPenalty": 0.05,
+  "scopeUnknownPenalty": 0.6,
+  "maxSameSourceInfluence": 3,
+  "swarmSignaturePenalty": 0.2,
+  "futureTimestampPenalty": 0.1
 }

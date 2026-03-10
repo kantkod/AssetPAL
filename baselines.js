@@ -66,7 +66,7 @@ export function answerWithBaseline(name, cfg, retrievedDocs, query){
         }
       }
     }
-    const dec = ledger.decide(query.domain, query.subject, query.nowTs);
+    const dec = ledger.decide(query.domain, query.subject, query.nowTs, query.scope);
     if (dec.status === "NO_EVIDENCE") return { status:"NO_ANSWER", value:null, confidence:0.0, evidence:[] };
 
     if (dec.status === "CONFLICT") {

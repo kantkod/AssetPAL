@@ -17,7 +17,6 @@ export function scoreResult(summary, query, result) {
 
   if (result.status === "CONFLICT") {
     summary.conflict_marked += 1;
-    // count as correct behavior in conflict experiment scoring may differ; handled by experiment-specific logic
     return;
   }
   if (result.status === "UNCERTAIN") {
@@ -38,6 +37,20 @@ export function scoreResult(summary, query, result) {
 }
 
 export function finalize(summary) {
-  const acc = summary.total ? summary.correct / summary.total : 0;
-  return { ...summary, accuracy: acc };
+  const accuracy = summary.total ? summary.correct / summary.total : 0;
+  const answered = summary.correct + summary.wrong;
+  const accuracy_answered = answered ? summary.correct / answered : 0;
+  const coverage = summary.total ? answered / summary.total : 0;
+  const abstain = summary.conflict_marked + summary.uncertain + summary.no_answer;
+  const abstain_rate = summary.total ? abstain / summary.total : 0;
+
+  return {
+    ...summary,
+    answered,
+    accuracy,
+    accuracy_answered,
+    coverage,
+    abstain,
+    abstain_rate
+  };
 }
