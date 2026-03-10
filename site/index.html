@@ -739,13 +739,25 @@ function chartOpts(yLabel) {
 }
 
 // Boot
-if (window.__RESULTS__) {
-  render(window.__RESULTS__);
-} else {
-  document.getElementById("loading").innerHTML = `
-    <p style="color: var(--red);">No results data found. Run the build to generate results.</p>
-  `;
+async function boot() {
+  if (window.__RESULTS__) {
+    render(window.__RESULTS__);
+    return;
+  }
+
+  try {
+    const res = await fetch("/results.json");
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    window.__RESULTS__ = await res.json();
+    render(window.__RESULTS__);
+  } catch (err) {
+    document.getElementById("loading").innerHTML = `
+      <p style="color: var(--red);">No results data found at /results.json. Run the build to generate results.</p>
+    `;
+  }
 }
+
+boot();
 </script>
 
 </body>

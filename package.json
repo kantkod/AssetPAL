@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
+    "build": "node build.js",
     "gen": "node generate_corpus.js",
     "run:conflict": "node run_experiment_conflict.js",
     "run:update": "node run_experiment_update.js",
