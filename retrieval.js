@@ -12,15 +12,17 @@ function overlapScore(qTokens, dTokens) {
 
 export function retrieveTopK(docs, query, topK = 6, seed = 1) {
   const rand = makeRng(seed);
-  const qTokens = tokenize(`${query.question} ${query.domain} ${query.subject} ${query.scope?.region || ""} ${query.scope?.tier || ""} ${query.scope?.product || ""}`);
+  const qTokens = tokenize(`${query.question} ${query.domain} ${query.subject}`);
+  const subjectTokens = new Set(tokenize(query.subject));
 
   const scored = docs
     .filter(d => d.domain === query.domain)
     .map(d => {
       const dTokens = tokenize(d.text);
       const o = overlapScore(qTokens, dTokens);
+      const subjectHit = dTokens.some(t => subjectTokens.has(t)) ? 0.3 : 0;
       const noise = (rand() - 0.5) * 0.02;
-      const score = o + noise;
+      const score = o + subjectHit + noise;
       return { doc: d, score };
     })
     .sort((a, b) => b.score - a.score)

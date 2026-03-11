@@ -16,13 +16,14 @@ export class TruthLedger {
     const qTheta = projectToTorus(domain, subject);
     const candidates = this.claims.filter(c => c.domain === domain && c.subject === subject);
 
-    const sourceCounts = new Map();
+    const sourceUniqueSigs = new Map();
     const signatureCounts = new Map();
     for (const c of candidates) {
       const sourceKey = c.source ?? "unknown";
-      sourceCounts.set(sourceKey, (sourceCounts.get(sourceKey) || 0) + 1);
-      const sigKey = `${c.source ?? "unknown"}|${c.timestamp}|${String(c.value)}`;
+      const sigKey = `${sourceKey}|${c.timestamp}|${String(c.value)}`;
       signatureCounts.set(sigKey, (signatureCounts.get(sigKey) || 0) + 1);
+      if (!sourceUniqueSigs.has(sourceKey)) sourceUniqueSigs.set(sourceKey, new Set());
+      sourceUniqueSigs.get(sourceKey).add(sigKey);
     }
 
     const scored = candidates.map(c => {
@@ -47,7 +48,7 @@ export class TruthLedger {
       w *= scopeWeight;
 
       const maxSameSourceInfluence = cfg.maxSameSourceInfluence ?? 3;
-      const sourceCount = sourceCounts.get(c.source ?? "unknown") || 1;
+      const sourceCount = sourceUniqueSigs.get(c.source ?? "unknown")?.size || 1;
       const sourcePenalty = Math.min(1, maxSameSourceInfluence / sourceCount);
       w *= sourcePenalty;
 
@@ -93,18 +94,23 @@ function scopeMatchWeight(claimScope, queryScope, cfg) {
 
   const dims = ["region", "tier", "product"];
   let known = 0;
-  let matched = 0;
+  let exact = 0;
+  let wild = 0;
   for (const k of dims) {
     const qv = queryScope[k];
     const cv = claimScope[k];
     if (qv == null || qv === "") continue;
     known += 1;
-    if (cv === "*" || cv == null || cv === qv) matched += 1;
+    if (cv === qv) exact += 1;
+    else if (cv === "*" || cv == null) wild += 1;
+    // else: mismatch — counts against
   }
 
   if (!known) return cfg.scopeUnknownPenalty ?? 0.6;
-  if (matched === known) return 1.0;
-  return cfg.scopeMismatchPenalty ?? 0.05;
+  const matched = exact + wild;
+  if (matched < known) return cfg.scopeMismatchPenalty ?? 0.05;  // any dim mismatched
+  if (wild > 0) return cfg.scopeWildcardPenalty ?? 0.75;         // all matched, some via wildcard
+  return 1.0;                                                      // all dims matched exactly
 }
 
 function clamp01(x) { return Math.max(0, Math.min(1, x)); }
