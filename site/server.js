@@ -17,6 +17,16 @@ function send(res, status, body, type = "text/plain; charset=utf-8") {
   res.end(body);
 }
 
+function codespacesUrl(port) {
+  const name = process.env.CODESPACE_NAME;
+  const domain = process.env.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN;
+  if (!name || !domain) return null;
+  return `https://${name}-${port}.${domain}/site/inspect.html`;
+}
+
+const server = http.createServer((req, res) => {
+  const urlPath = decodeURIComponent((req.url || "/").split("?")[0]);
+  const requested = (urlPath === "/" || urlPath === "/site" || urlPath === "/site/") ? "/site/inspect.html" : urlPath;
 const server = http.createServer((req, res) => {
   const urlPath = decodeURIComponent((req.url || "/").split("?")[0]);
   const requested = urlPath === "/" ? "/site/inspect.html" : urlPath;
@@ -41,5 +51,11 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(PORT, "0.0.0.0", () => {
+  const local = `http://localhost:${PORT}/site/inspect.html`;
+  const remote = codespacesUrl(PORT);
+  console.log(`Inspector server running. Open ${local}`);
+  if (remote) {
+    console.log(`Codespaces URL: ${remote}`);
+  }
   console.log(`Inspector server running on http://localhost:${PORT}/site/inspect.html`);
 });
