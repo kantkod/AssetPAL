@@ -10,6 +10,8 @@
     "run:conflict": "node run_experiment_conflict.js",
     "run:update": "node run_experiment_update.js",
     "run:swarm": "node run_experiment_swarm.js",
-    "run:all": "node run_all.js"
+    "run:all": "node run_all.js",
+    "bench": "node bench.js",
+    "inspect": "node site/server.js"
   }
 }
