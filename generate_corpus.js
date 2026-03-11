@@ -37,10 +37,14 @@ export async function generateCorpus(configPath = "./default.json") {
   let docCounter = 0;
 
   const subjectBank = {
-    HR: ["refund_window", "parental_leave", "expense_policy"],
-    SECURITY: ["password_rotation", "vpn_required", "data_retention"],
-    PRICING: ["discount_cap", "invoice_terms", "trial_length"],
-    SUPPORT: ["sla_response", "escalation_path", "supported_channels"]
+    HR: ["refund_window", "parental_leave", "expense_policy",
+         "termination_notice", "work_hours", "travel_reimbursement"],
+    SECURITY: ["password_rotation", "vpn_required", "data_retention",
+               "mfa_policy", "access_review", "incident_response"],
+    PRICING: ["discount_cap", "invoice_terms", "trial_length",
+              "subscription_model", "refund_policy", "pricing_tiers"],
+    SUPPORT: ["sla_response", "escalation_path", "supported_channels",
+              "ticket_priority", "resolution_time", "on_call_rotation"]
   };
 
   const scopeCombos = [
