@@ -446,8 +446,11 @@
 
     async function loadData() {
       statusEl.textContent = "Loading run artifacts...";
-      const latest = await fetch("/runs/latest.json").then(r => r.json());
+      const latestResp = await fetch("/runs/latest.json");
+      if (!latestResp.ok) throw new Error("Missing /runs/latest.json. Run `npm run bench` first.");
+      const latest = await latestResp.json();
       const runId = latest.runId;
+      if (!runId) throw new Error("runs/latest.json did not include runId.");
       const data = await fetch(`/runs/${runId}/per_query.json`).then(r => r.json());
       allRecords = Array.isArray(data) ? data : [];
 

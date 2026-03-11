@@ -26,7 +26,7 @@ function codespacesUrl(port) {
 
 const server = http.createServer((req, res) => {
   const urlPath = decodeURIComponent((req.url || "/").split("?")[0]);
-  const requested = urlPath === "/" ? "/site/inspect.html" : urlPath;
+  const requested = (urlPath === "/" || urlPath === "/site" || urlPath === "/site/") ? "/site/inspect.html" : urlPath;
 
   if (!requested.startsWith("/site/") && !requested.startsWith("/runs/")) {
     return send(res, 403, "Only /site/* and /runs/* are served.");
@@ -50,7 +50,7 @@ const server = http.createServer((req, res) => {
 server.listen(PORT, "0.0.0.0", () => {
   const local = `http://localhost:${PORT}/site/inspect.html`;
   const remote = codespacesUrl(PORT);
-  console.log(`Inspector server running on ${local}`);
+  console.log(`Inspector server running. Open ${local}`);
   if (remote) {
     console.log(`Codespaces URL: ${remote}`);
   }
