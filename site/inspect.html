@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AssetPAL - Run Inspector</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #242736;
+      --border: #2e3244;
+      --text: #e4e6f0;
+      --text-dim: #8b8fa3;
+      --accent: #6c5ce7;
+      --accent2: #00cec9;
+      --green: #00b894;
+      --red: #e17055;
+      --orange: #fdcb6e;
+      --blue: #74b9ff;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    .container { max-width: 1400px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+    header {
+      text-align: center;
+      padding: 2rem 0 1.5rem;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 1.5rem;
+    }
+
+    header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    header p { color: var(--text-dim); margin-top: 0.4rem; }
+
+    .action-bar {
+      display: flex;
+      justify-content: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      margin-bottom: 1.5rem;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.6rem 1.2rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--text);
+      text-decoration: none;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+    }
+
+    .btn:hover { border-color: var(--accent); background: var(--surface2); }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 1.2rem;
+      min-height: 68vh;
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+
+    .sidebar { padding: 1rem; }
+
+    .section-title {
+      font-size: 1rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 0.65rem;
+    }
+
+    .filters {
+      display: grid;
+      gap: 0.65rem;
+      margin-bottom: 1rem;
+    }
+
+    label { font-size: 0.84rem; color: var(--text-dim); }
+
+    select, input[type="text"] {
+      width: 100%;
+      margin-top: 0.3rem;
+      padding: 0.5rem 0.65rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--text);
+    }
+
+    .checkbox {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--text);
+      font-size: 0.9rem;
+    }
+
+    #queryList {
+      max-height: calc(68vh - 210px);
+      overflow: auto;
+      padding-right: 0.25rem;
+    }
+
+    .query-item {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface2);
+      padding: 0.7rem;
+      margin-bottom: 0.55rem;
+      cursor: pointer;
+    }
+
+    .query-item.active { border-color: var(--accent); box-shadow: inset 0 0 0 1px rgba(108,92,231,0.25); }
+    .query-item:hover { border-color: var(--accent2); }
+
+    .query-meta { font-size: 0.78rem; color: var(--text-dim); }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin-right: 0.35rem;
+      margin-top: 0.25rem;
+      border: 1px solid transparent;
+    }
+
+    .badge-pal { background: rgba(108,92,231,0.2); color: var(--accent); }
+    .badge-ok { background: rgba(0,184,148,0.2); color: var(--green); }
+    .badge-bad { background: rgba(225,112,85,0.2); color: var(--red); }
+    .badge-mode { background: rgba(0,206,201,0.15); color: var(--accent2); }
+
+    .main { padding: 1rem 1.15rem; }
+
+    .status {
+      color: var(--text-dim);
+      margin-bottom: 0.8rem;
+      font-size: 0.9rem;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 0.7rem;
+      margin-bottom: 1rem;
+    }
+
+    .card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.65rem 0.75rem;
+    }
+
+    .card .k { color: var(--text-dim); font-size: 0.75rem; text-transform: uppercase; }
+    .card .v { font-weight: 600; font-size: 0.95rem; margin-top: 0.2rem; }
+
+    .box {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.8rem;
+      margin-top: 0.8rem;
+    }
+
+    h3 { font-size: 1.15rem; margin-bottom: 0.35rem; }
+    h4 { margin-top: 1rem; margin-bottom: 0.45rem; font-size: 0.95rem; }
+
+    pre {
+      white-space: pre-wrap;
+      word-break: break-word;
+      background: #131620;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.55rem;
+      color: #cfd3e4;
+      font-size: 0.85rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 0.4rem;
+      font-size: 0.87rem;
+    }
+
+    th, td {
+      padding: 0.5rem 0.6rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+
+    th {
+      color: var(--text-dim);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    tr:last-child td { border-bottom: none; }
+
+    .muted { color: var(--text-dim); }
+
+    @media (max-width: 1000px) {
+      .layout { grid-template-columns: 1fr; }
+      #queryList { max-height: 280px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>AssetPAL Run Inspector</h1>
+      <p>Browse per-query traces for any benchmark run in <code>runs/</code>.</p>
+    </header>
+
+    <div class="action-bar">
+      <a class="btn" href="/site/index.html">← Back to Run Experiment UI</a>
+      <button class="btn" id="reloadBtn">Reload latest run</button>
+    </div>
+
+    <div class="layout">
+      <aside class="panel sidebar">
+        <div class="section-title">Filters</div>
+        <div class="filters">
+          <label>Baseline <select id="baseline"></select></label>
+          <label>Experiment <select id="experiment"></select></label>
+          <label>Variant <select id="variant"></select></label>
+          <label class="checkbox"><input id="onlyFailures" type="checkbox" /> Show only failures</label>
+          <label>Search <input id="search" type="text" placeholder="query id / subject" /></label>
+        </div>
+        <div class="section-title">Queries</div>
+        <div id="queryList"></div>
+      </aside>
+
+      <main class="panel main">
+        <div id="status" class="status">Loading run artifacts...</div>
+        <div id="details" class="muted">Pick a query to inspect expected vs actual, retrieval docs, and PAL options.</div>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    let allRecords = [];
+    let filtered = [];
+    let selectedIndex = -1;
+
+    const baselineEl = document.getElementById("baseline");
+    const experimentEl = document.getElementById("experiment");
+    const variantEl = document.getElementById("variant");
+    const onlyFailuresEl = document.getElementById("onlyFailures");
+    const searchEl = document.getElementById("search");
+    const listEl = document.getElementById("queryList");
+    const detailsEl = document.getElementById("details");
+    const statusEl = document.getElementById("status");
+    const reloadBtn = document.getElementById("reloadBtn");
+
+    function uniqueValues(items, pick) {
+      return Array.from(new Set(items.map(pick))).filter(Boolean).sort();
+    }
+
+    function fillSelect(el, values) {
+      el.innerHTML = "";
+      const all = document.createElement("option");
+      all.value = "ALL";
+      all.textContent = "ALL";
+      el.appendChild(all);
+      values.forEach(v => {
+        const opt = document.createElement("option");
+        opt.value = v;
+        opt.textContent = v;
+        el.appendChild(opt);
+      });
+    }
+
+    function setFromQueryParams() {
+      const p = new URLSearchParams(location.search);
+      const baseline = p.get("baseline");
+      const experiment = p.get("experiment");
+      const variant = p.get("variant");
+      const search = p.get("search");
+      const onlyFailures = p.get("failures") === "1";
+
+      if (baseline && [...baselineEl.options].some(o => o.value === baseline)) baselineEl.value = baseline;
+      if (experiment && [...experimentEl.options].some(o => o.value === experiment)) experimentEl.value = experiment;
+      if (variant && [...variantEl.options].some(o => o.value === variant)) variantEl.value = variant;
+      if (search) searchEl.value = search;
+      if (onlyFailures) onlyFailuresEl.checked = true;
+    }
+
+    function syncUrl() {
+      const p = new URLSearchParams();
+      if (baselineEl.value !== "ALL") p.set("baseline", baselineEl.value);
+      if (experimentEl.value !== "ALL") p.set("experiment", experimentEl.value);
+      if (variantEl.value !== "ALL") p.set("variant", variantEl.value);
+      if (searchEl.value.trim()) p.set("search", searchEl.value.trim());
+      if (onlyFailuresEl.checked) p.set("failures", "1");
+      const q = p.toString();
+      history.replaceState(null, "", q ? `?${q}` : location.pathname);
+    }
+
+    function applyFilters() {
+      const baseline = baselineEl.value;
+      const experiment = experimentEl.value;
+      const variant = variantEl.value;
+      const onlyFailures = onlyFailuresEl.checked;
+      const q = searchEl.value.trim().toLowerCase();
+
+      filtered = allRecords.filter(r => {
+        if (baseline !== "ALL" && r.baseline !== baseline) return false;
+        if (experiment !== "ALL" && r.experiment !== experiment) return false;
+        if (variant !== "ALL" && r.variant !== variant) return false;
+        if (onlyFailures && r.label?.isCorrect) return false;
+        if (q) {
+          const hay = `${r.query?.id || ""} ${r.query?.subject || ""}`.toLowerCase();
+          if (!hay.includes(q)) return false;
+        }
+        return true;
+      });
+
+      syncUrl();
+      renderList();
+      if (filtered.length) {
+        if (selectedIndex < 0 || selectedIndex >= filtered.length) selectedIndex = 0;
+        renderDetails(filtered[selectedIndex]);
+      } else {
+        selectedIndex = -1;
+        detailsEl.innerHTML = `<div class="box">No queries match the current filters.</div>`;
+      }
+    }
+
+    function renderList() {
+      listEl.innerHTML = "";
+      statusEl.textContent = `${filtered.length} / ${allRecords.length} records`;
+
+      filtered.forEach((r, i) => {
+        const div = document.createElement("div");
+        div.className = "query-item" + (i === selectedIndex ? " active" : "");
+        const ok = r.label?.isCorrect;
+        div.innerHTML = `
+          <div><strong>${ok ? "✅" : "❌"} ${r.query.id}</strong></div>
+          <div class="query-meta">${r.experiment} / ${r.variant}</div>
+          <div>
+            <span class="badge badge-pal">${r.baseline}</span>
+            <span class="badge ${ok ? "badge-ok" : "badge-bad"}">${r.decision.status}</span>
+          </div>
+        `;
+        div.addEventListener("click", () => {
+          selectedIndex = i;
+          renderList();
+          renderDetails(r);
+        });
+        listEl.appendChild(div);
+      });
+    }
+
+    function renderDetails(r) {
+      const isPal = r.baseline === "PAL_LEDGER";
+      const options = [...(r.decision.options || [])].sort((a, b) => (b.score || 0) - (a.score || 0));
+
+      detailsEl.innerHTML = `
+        <h3>${r.query.id}</h3>
+        <div class="cards">
+          <div class="card"><div class="k">Experiment</div><div class="v">${r.experiment}</div></div>
+          <div class="card"><div class="k">Variant</div><div class="v">${r.variant}</div></div>
+          <div class="card"><div class="k">Baseline</div><div class="v">${r.baseline}</div></div>
+          <div class="card"><div class="k">Expected</div><div class="v">${r.query.expected}</div></div>
+          <div class="card"><div class="k">Decision</div><div class="v">${r.decision.status}</div></div>
+          <div class="card"><div class="k">Confidence</div><div class="v">${Number(r.decision.confidence || 0).toFixed(4)}</div></div>
+        </div>
+
+        <div class="box">
+          <strong>Question</strong>
+          <div>${r.query.question}</div>
+          <div class="muted">${r.query.domain} / ${r.query.subject} @ nowTs=${r.query.nowTs}</div>
+        </div>
+
+        <h4>Scope</h4>
+        <pre>${JSON.stringify(r.query.scope, null, 2)}</pre>
+
+        <h4>Expected vs Actual</h4>
+        <div class="box">
+          <div><strong>Expected:</strong> ${r.query.expected}</div>
+          <div><strong>Actual:</strong> ${r.decision.value ?? "(none)"}</div>
+          <div><strong>Evidence:</strong> ${(r.decision.evidence || []).join(", ") || "(none)"}</div>
+          <div><strong>Label:</strong> ${r.label?.isCorrect ? "correct" : "failure"}${r.label?.wrongType ? ` (wrongType=${r.label.wrongType})` : ""}</div>
+        </div>
+
+        <h4>TopK Retrieval</h4>
+        <table>
+          <thead><tr><th>id</th><th>source</th><th>timestamp</th><th>reliability</th><th>claimValue</th></tr></thead>
+          <tbody>
+            ${(r.retrieval.topK || []).map(d => `<tr><td>${d.id}</td><td>${d.source}</td><td>${d.timestamp}</td><td>${d.reliability}</td><td>${d.claimValue ?? ""}</td></tr>`).join("")}
+          </tbody>
+        </table>
+
+        ${isPal ? `
+          <h4>PAL Ledger Top Candidates</h4>
+          <table>
+            <thead><tr><th>value</th><th>docId</th><th>score</th></tr></thead>
+            <tbody>
+              ${options.map(o => `<tr><td>${o.value}</td><td>${o.docId}</td><td>${Number(o.score || 0).toFixed(6)}</td></tr>`).join("")}
+            </tbody>
+          </table>
+        ` : ""}
+      `;
+    }
+
+    function attachHandlers() {
+      [baselineEl, experimentEl, variantEl, onlyFailuresEl, searchEl].forEach(el => {
+        el.addEventListener("change", applyFilters);
+        el.addEventListener("input", applyFilters);
+      });
+      reloadBtn.addEventListener("click", loadData);
+    }
+
+    async function loadData() {
+      statusEl.textContent = "Loading run artifacts...";
+      const latest = await fetch("/runs/latest.json").then(r => r.json());
+      const runId = latest.runId;
+      const data = await fetch(`/runs/${runId}/per_query.json`).then(r => r.json());
+      allRecords = Array.isArray(data) ? data : [];
+
+      fillSelect(baselineEl, uniqueValues(allRecords, r => r.baseline));
+      fillSelect(experimentEl, uniqueValues(allRecords, r => r.experiment));
+      fillSelect(variantEl, uniqueValues(allRecords, r => r.variant));
+      setFromQueryParams();
+
+      statusEl.textContent = `Loaded run ${runId}`;
+      selectedIndex = -1;
+      applyFilters();
+    }
+
+    attachHandlers();
+    loadData().catch(err => {
+      statusEl.textContent = "Failed to load run data.";
+      detailsEl.innerHTML = `<pre>${String((err && err.stack) || err)}</pre>`;
+    });
+  </script>
+</body>
+</html>
