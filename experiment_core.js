@@ -61,8 +61,55 @@ function printDebugTrace({ cfg, experimentName, q, top, baseline, result, swarmM
   });
 }
 
+function toPerQueryRecord({ experiment, variant, baseline, q, top, result }) {
+  const retrievalTopK = top.map(d => ({
+    id: d.id,
+    source: d.source,
+    timestamp: d.timestamp,
+    reliability: d.reliability,
+    claimValue: claimValueForDoc(d, q)
+  }));
+
+  let wrongType = null;
+  if (result.status === "ANSWER" && result.value !== q.expected) {
+    const v = String(result.value || "");
+    if (v.startsWith("FALSE_")) wrongType = "FALSE";
+    else if (v.startsWith("v0_")) wrongType = "v0";
+    else if (v.startsWith("v1_")) wrongType = "v1";
+    else wrongType = "other";
+  }
+
+  return {
+    experiment,
+    variant,
+    baseline,
+    query: {
+      id: q.id,
+      question: q.question,
+      domain: q.domain,
+      subject: q.subject,
+      scope: q.scope,
+      nowTs: q.nowTs,
+      expected: q.expected
+    },
+    retrieval: { topK: retrievalTopK },
+    decision: {
+      status: result.status,
+      value: result.value,
+      confidence: result.confidence,
+      evidence: result.evidence,
+      options: Array.isArray(result.options) ? result.options : []
+    },
+    label: {
+      isCorrect: result.status === "ANSWER" && result.value === q.expected,
+      wrongType
+    }
+  };
+}
+
 export function runConflictCore(cfg, corpus, queries) {
   const results = {};
+  const perQuery = [];
   for (const b of BASELINE_LIST) {
     const sum = initSummary();
     let conflictGood = 0;
@@ -96,6 +143,15 @@ export function runConflictCore(cfg, corpus, queries) {
       } else {
         scoreResult(sum, q, r);
       }
+
+      perQuery.push(toPerQueryRecord({
+        experiment: "conflict",
+        variant: "base",
+        baseline: b,
+        q,
+        top,
+        result: r
+      }));
     }
 
     results[b] = {
@@ -106,7 +162,7 @@ export function runConflictCore(cfg, corpus, queries) {
     };
   }
 
-  return { experiment: "conflict", results };
+  return { experiment: "conflict", results, perQuery };
 }
 
 function filterDocsByTime(docs, nowTs) {
@@ -115,6 +171,7 @@ function filterDocsByTime(docs, nowTs) {
 
 export function runUpdateCore(cfg, corpus, queries) {
   const results = {};
+  const perQuery = [];
   for (const b of BASELINE_LIST) {
     const sum = initSummary();
     let adoptedNew = 0;
@@ -144,6 +201,15 @@ export function runUpdateCore(cfg, corpus, queries) {
       }
 
       scoreResult(sum, q, r);
+
+      perQuery.push(toPerQueryRecord({
+        experiment: "update",
+        variant: q.phase || "t0",
+        baseline: b,
+        q,
+        top,
+        result: r
+      }));
     }
 
     results[b] = {
@@ -159,7 +225,7 @@ export function runUpdateCore(cfg, corpus, queries) {
     };
   }
 
-  return { experiment: "update", results };
+  return { experiment: "update", results, perQuery };
 }
 
 function getSwarmModes(cfg) {
@@ -177,6 +243,7 @@ export function runSwarmCore(cfg, corpus, queries) {
 
   const swarmModes = getSwarmModes(cfg);
   const results = {};
+  const perQuery = [];
   for (const b of BASELINE_LIST) {
     results[b] = {};
     for (const swarmMode of swarmModes) {
@@ -206,6 +273,15 @@ export function runSwarmCore(cfg, corpus, queries) {
           });
 
           scoreResult(sum, q, r);
+
+          perQuery.push(toPerQueryRecord({
+            experiment: "swarm",
+            variant: `${swarmMode}_swarm_${swarmSize}`,
+            baseline: b,
+            q,
+            top,
+            result: r
+          }));
         }
 
         results[b][`${swarmMode}_swarm_${swarmSize}`] = finalize(sum);
@@ -213,5 +289,5 @@ export function runSwarmCore(cfg, corpus, queries) {
     }
   }
 
-  return { experiment: "swarm", swarmSizes: cfg.swarmSizes, swarmModes, results };
+  return { experiment: "swarm", swarmSizes: cfg.swarmSizes, swarmModes, results, perQuery };
 }
