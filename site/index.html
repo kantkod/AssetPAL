@@ -460,6 +460,14 @@ function fallbackCopy(text) {
   showToast("Copied to clipboard");
 }
 
+function swarmKeySort(a, b) {
+  const ma = a.match(/^(.+)_swarm_(\d+)$/);
+  const mb = b.match(/^(.+)_swarm_(\d+)$/);
+  if (!ma || !mb) return a.localeCompare(b);
+  if (ma[1] !== mb[1]) return ma[1].localeCompare(mb[1]);
+  return Number(ma[2]) - Number(mb[2]);
+}
+
 function generateMarkdown(data) {
   let md = `# AssetPAL Benchmark Results\n`;
   md += `**Overall PAL Score: ${pct(data.score)}**\n\n`;
@@ -467,12 +475,13 @@ function generateMarkdown(data) {
   // Conflict
   if (data.results.conflict) {
     md += `## Experiment 1: Conflict Resolution\n`;
-    md += `| Baseline | Accuracy | Correct | Wrong | Conflict Good Rate |\n`;
-    md += `|----------|----------|---------|-------|--------------------|\n`;
+    md += `| Baseline | Accuracy | Correct | Wrong | Conflict Good Rate | Wrong Type |\n`;
+    md += `|----------|----------|---------|-------|--------------------|-----------|\n`;
     for (const b of BASELINE_ORDER) {
       const s = data.results.conflict[b];
       if (!s) continue;
-      md += `| ${BASELINE_LABELS[b]} | ${pct(s.accuracy)} | ${s.correct}/${s.total} | ${s.wrong} | ${pct(s.conflict_good_rate)} |\n`;
+      const wType = [s.wrong_false ? `F:${s.wrong_false}` : "", s.wrong_other ? `O:${s.wrong_other}` : ""].filter(Boolean).join(" ") || "—";
+      md += `| ${BASELINE_LABELS[b]} | ${pct(s.accuracy)} | ${s.correct}/${s.total} | ${s.wrong} | ${pct(s.conflict_good_rate)} | ${wType} |\n`;
     }
     md += `\n`;
   }
@@ -480,12 +489,12 @@ function generateMarkdown(data) {
   // Update
   if (data.results.update) {
     md += `## Experiment 2: Temporal Updates\n`;
-    md += `| Baseline | Accuracy | Adoption Rate | Regression Rate |\n`;
-    md += `|----------|----------|---------------|------------------|\n`;
+    md += `| Baseline | Accuracy | Adoption Rate | Regression Rate | Over-update | Under-update |\n`;
+    md += `|----------|----------|---------------|-----------------|-------------|--------------|\n`;
     for (const b of BASELINE_ORDER) {
       const s = data.results.update[b];
       if (!s) continue;
-      md += `| ${BASELINE_LABELS[b]} | ${pct(s.accuracy)} | ${pct(s.adopted_new_rate)} | ${pct(s.regression_rate)} |\n`;
+      md += `| ${BASELINE_LABELS[b]} | ${pct(s.accuracy)} | ${pct(s.adopted_new_rate)} | ${pct(s.regression_rate)} | ${s.over_update ?? 0} | ${s.under_update ?? 0} |\n`;
     }
     md += `\n`;
   }
@@ -494,7 +503,7 @@ function generateMarkdown(data) {
   if (data.results.swarm) {
     const first = data.results.swarm[BASELINE_ORDER[0]];
     if (first) {
-      const keys = Object.keys(first).sort();
+      const keys = Object.keys(first).sort(swarmKeySort);
       const colLabels = keys.map(k => {
         const m = k.match(/^(.+)_swarm_(\d+)$/);
         return m ? `${m[1].charAt(0).toUpperCase() + m[1].slice(1)} ${m[2]}` : k;
@@ -554,13 +563,17 @@ function render(data) {
 function renderConflictTable(conflict) {
   const container = document.getElementById("conflictTable");
   let html = `<table>
-    <tr><th>Baseline</th><th>Accuracy</th><th>Correct</th><th>Wrong</th><th>Conflict Good Rate</th><th>Wrong + Confident</th></tr>`;
+    <tr><th>Baseline</th><th>Accuracy</th><th>Correct</th><th>Wrong</th><th>Conflict Good Rate</th><th>Wrong Confident</th><th>Wrong Type</th></tr>`;
   const accs = BASELINE_ORDER.map(b => conflict[b]?.accuracy ?? 0);
   const maxAcc = Math.max(...accs);
   for (const b of BASELINE_ORDER) {
     const s = conflict[b];
     if (!s) continue;
     const isBest = s.accuracy === maxAcc;
+    const wParts = [];
+    if (s.wrong_false) wParts.push(`<span style="color:var(--red)">F:${s.wrong_false}</span>`);
+    if (s.wrong_other) wParts.push(`<span style="color:var(--orange)">O:${s.wrong_other}</span>`);
+    const wType = wParts.length ? wParts.join(" ") : `<span style="color:var(--green)">—</span>`;
     html += `<tr>
       <td><span class="badge ${BADGE_CLASS[b]}">${BASELINE_LABELS[b]}</span></td>
       <td class="${isBest ? 'best' : ''}">${pct(s.accuracy)}</td>
@@ -568,6 +581,7 @@ function renderConflictTable(conflict) {
       <td class="${s.wrong > 0 ? 'worst' : ''}">${s.wrong}</td>
       <td>${pct(s.conflict_good_rate)}</td>
       <td class="${s.wrong_confident > 0 ? 'worst' : ''}">${s.wrong_confident}</td>
+      <td>${wType}</td>
     </tr>`;
   }
   html += `</table>`;
@@ -610,7 +624,7 @@ function renderConflictCharts(conflict) {
 function renderUpdateTable(update) {
   const container = document.getElementById("updateTable");
   let html = `<table>
-    <tr><th>Baseline</th><th>Accuracy</th><th>Adopted New</th><th>Adoption Rate</th><th>Regression Rate</th></tr>`;
+    <tr><th>Baseline</th><th>Accuracy</th><th>Adopted New</th><th>Adoption Rate</th><th>Regression Rate</th><th>Over-update</th><th>Under-update</th></tr>`;
   const accs = BASELINE_ORDER.map(b => update[b]?.adopted_new_rate ?? 0);
   const maxAcc = Math.max(...accs);
   for (const b of BASELINE_ORDER) {
@@ -623,6 +637,8 @@ function renderUpdateTable(update) {
       <td>${s.adopted_new}/${s.t1_total}</td>
       <td class="${isBest ? 'best' : ''}">${pct(s.adopted_new_rate)}</td>
       <td class="${s.regression_rate > 0 ? 'worst' : ''}">${pct(s.regression_rate)}</td>
+      <td class="${(s.over_update ?? 0) > 0 ? 'worst' : ''}">${s.over_update ?? 0}</td>
+      <td class="${(s.under_update ?? 0) > 0 ? 'worst' : ''}">${s.under_update ?? 0}</td>
     </tr>`;
   }
   html += `</table>`;
@@ -665,7 +681,7 @@ function renderUpdateCharts(update) {
 function renderSwarmTable(swarm) {
   const container = document.getElementById("swarmTable");
   const firstBaseline = swarm[BASELINE_ORDER[0]];
-  const keys = Object.keys(firstBaseline).sort();
+  const keys = Object.keys(firstBaseline).sort(swarmKeySort);
 
   function colLabel(k) {
     const m = k.match(/^(.+)_swarm_(\d+)$/);
@@ -681,8 +697,10 @@ function renderSwarmTable(swarm) {
     for (const k of keys) {
       const entry = swarm[b]?.[k];
       const acc = entry?.accuracy ?? 0;
+      const wrongFalse = entry?.wrong_false ?? 0;
       const cls = acc >= 0.9 ? 'best' : acc < 0.4 ? 'worst' : '';
-      html += `<td class="${cls}">${pct(acc)}</td>`;
+      const sub = wrongFalse > 0 ? `<br><small style="color:var(--red);font-size:0.7rem">F:${wrongFalse}</small>` : '';
+      html += `<td class="${cls}">${pct(acc)}${sub}</td>`;
     }
     html += `</tr>`;
   }
@@ -692,7 +710,7 @@ function renderSwarmTable(swarm) {
 
 function renderSwarmChart(swarm) {
   const firstBaseline = swarm[BASELINE_ORDER[0]];
-  const keys = Object.keys(firstBaseline).sort();
+  const keys = Object.keys(firstBaseline).sort(swarmKeySort);
 
   const datasets = BASELINE_ORDER.map(b => ({
     label: BASELINE_LABELS[b],

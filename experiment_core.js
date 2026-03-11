@@ -191,7 +191,7 @@ export function runSwarmCore(cfg, corpus, queries) {
             : [];
           const docsWithSwarm = visibleDocs.concat(swarm);
 
-          const top = retrieveTopK(docsWithSwarm, q, cfg.topK, cfg.seed + swarmSize + q.nowTs);
+          const top = retrieveTopK(docsWithSwarm, q, cfg.topK + swarmSize, cfg.seed + swarmSize + q.nowTs);
           const r = answerWithBaseline(b, cfg, top, q);
 
           printDebugTrace({
