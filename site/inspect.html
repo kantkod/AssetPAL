@@ -252,6 +252,32 @@
     <div class="layout">
       <aside class="panel sidebar">
         <div class="section-title">Filters</div>
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AssetPAL Run Inspector</title>
+    <style>
+      body { margin: 0; font-family: Arial, sans-serif; }
+      .layout { display: grid; grid-template-columns: 360px 1fr; height: 100vh; }
+      .sidebar { border-right: 1px solid #ddd; padding: 12px; overflow: auto; }
+      .main { padding: 12px; overflow: auto; }
+      .filters { display: grid; gap: 8px; margin-bottom: 12px; }
+      select, input[type="text"] { width: 100%; padding: 6px; }
+      .query-item { border: 1px solid #ddd; padding: 8px; margin-bottom: 8px; cursor: pointer; }
+      .query-item:hover { background: #f7f7f7; }
+      .query-item.active { border-color: #0078d4; background: #eef6ff; }
+      .badge { display: inline-block; padding: 2px 6px; border-radius: 10px; font-size: 12px; background: #eee; }
+      table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+      th, td { border: 1px solid #ddd; padding: 6px; font-size: 13px; text-align: left; }
+      pre { white-space: pre-wrap; word-break: break-word; background: #f7f7f7; padding: 8px; }
+    </style>
+  </head>
+  <body>
+    <div class="layout">
+      <div class="sidebar">
+        <h3>Queries</h3>
         <div class="filters">
           <label>Baseline <select id="baseline"></select></label>
           <label>Experiment <select id="experiment"></select></label>
@@ -471,4 +497,159 @@
     });
   </script>
 </body>
+          <label><input id="onlyFailures" type="checkbox" /> Show only failures</label>
+          <label>Search <input id="search" type="text" placeholder="query id / subject" /></label>
+        </div>
+        <div id="queryList"></div>
+      </div>
+      <div class="main">
+        <h2>Run Inspector</h2>
+        <div id="status">Loading…</div>
+        <div id="details"></div>
+      </div>
+    </div>
+
+    <script>
+      let allRecords = [];
+      let filtered = [];
+      let selectedIndex = -1;
+
+      const baselineEl = document.getElementById("baseline");
+      const experimentEl = document.getElementById("experiment");
+      const variantEl = document.getElementById("variant");
+      const onlyFailuresEl = document.getElementById("onlyFailures");
+      const searchEl = document.getElementById("search");
+      const listEl = document.getElementById("queryList");
+      const detailsEl = document.getElementById("details");
+      const statusEl = document.getElementById("status");
+
+      function uniqueValues(items, pick) {
+        return Array.from(new Set(items.map(pick))).filter(Boolean).sort();
+      }
+
+      function fillSelect(el, values) {
+        el.innerHTML = "";
+        const all = document.createElement("option");
+        all.value = "ALL";
+        all.textContent = "ALL";
+        el.appendChild(all);
+        values.forEach(v => {
+          const opt = document.createElement("option");
+          opt.value = v;
+          opt.textContent = v;
+          el.appendChild(opt);
+        });
+      }
+
+      function applyFilters() {
+        const baseline = baselineEl.value;
+        const experiment = experimentEl.value;
+        const variant = variantEl.value;
+        const onlyFailures = onlyFailuresEl.checked;
+        const q = searchEl.value.trim().toLowerCase();
+
+        filtered = allRecords.filter(r => {
+          if (baseline !== "ALL" && r.baseline !== baseline) return false;
+          if (experiment !== "ALL" && r.experiment !== experiment) return false;
+          if (variant !== "ALL" && r.variant !== variant) return false;
+          if (onlyFailures && r.label?.isCorrect) return false;
+          if (q) {
+            const hay = `${r.query?.id || ""} ${r.query?.subject || ""}`.toLowerCase();
+            if (!hay.includes(q)) return false;
+          }
+          return true;
+        });
+
+        renderList();
+        if (filtered.length) {
+          if (selectedIndex < 0 || selectedIndex >= filtered.length) selectedIndex = 0;
+          renderDetails(filtered[selectedIndex]);
+        } else {
+          selectedIndex = -1;
+          detailsEl.innerHTML = "<p>No queries match the current filters.</p>";
+        }
+      }
+
+      function renderList() {
+        listEl.innerHTML = "";
+        statusEl.textContent = `${filtered.length} / ${allRecords.length} records`;
+
+        filtered.forEach((r, i) => {
+          const div = document.createElement("div");
+          div.className = "query-item" + (i === selectedIndex ? " active" : "");
+          const mark = r.label?.isCorrect ? "✅" : "❌";
+          div.innerHTML = `<div><strong>${mark} ${r.query.id}</strong></div>
+            <div>${r.experiment} / ${r.variant}</div>
+            <div><span class="badge">${r.baseline}</span> <span class="badge">${r.decision.status}</span></div>`;
+          div.addEventListener("click", () => {
+            selectedIndex = i;
+            renderList();
+            renderDetails(r);
+          });
+          listEl.appendChild(div);
+        });
+      }
+
+      function renderDetails(r) {
+        const isPal = r.baseline === "PAL_LEDGER";
+        const options = [...(r.decision.options || [])].sort((a, b) => (b.score || 0) - (a.score || 0));
+
+        detailsEl.innerHTML = `
+          <h3>${r.query.id}</h3>
+          <p><strong>Question:</strong> ${r.query.question}</p>
+          <p><strong>Experiment:</strong> ${r.experiment} &nbsp; <strong>Variant:</strong> ${r.variant} &nbsp; <strong>Baseline:</strong> ${r.baseline}</p>
+          <p><strong>Domain/Subject:</strong> ${r.query.domain} / ${r.query.subject}</p>
+          <p><strong>Scope:</strong></p><pre>${JSON.stringify(r.query.scope, null, 2)}</pre>
+          <p><strong>Expected:</strong> ${r.query.expected}</p>
+          <p><strong>Decision:</strong> ${r.decision.status} | value=${r.decision.value} | confidence=${Number(r.decision.confidence || 0).toFixed(4)}</p>
+          <p><strong>Evidence:</strong> ${(r.decision.evidence || []).join(", ")}</p>
+          <p><strong>Label:</strong> ${r.label?.isCorrect ? "correct" : "failure"} ${r.label?.wrongType ? `(wrongType=${r.label.wrongType})` : ""}</p>
+
+          <h4>TopK Retrieval</h4>
+          <table>
+            <thead><tr><th>id</th><th>source</th><th>timestamp</th><th>reliability</th><th>claimValue</th></tr></thead>
+            <tbody>
+              ${(r.retrieval.topK || []).map(d => `<tr><td>${d.id}</td><td>${d.source}</td><td>${d.timestamp}</td><td>${d.reliability}</td><td>${d.claimValue ?? ""}</td></tr>`).join("")}
+            </tbody>
+          </table>
+
+          ${isPal ? `
+            <h4>PAL Ledger Top Candidates</h4>
+            <table>
+              <thead><tr><th>value</th><th>docId</th><th>score</th></tr></thead>
+              <tbody>
+                ${options.map(o => `<tr><td>${o.value}</td><td>${o.docId}</td><td>${Number(o.score || 0).toFixed(6)}</td></tr>`).join("")}
+              </tbody>
+            </table>
+          ` : ""}
+        `;
+      }
+
+      function attachHandlers() {
+        [baselineEl, experimentEl, variantEl, onlyFailuresEl, searchEl].forEach(el => {
+          el.addEventListener("change", applyFilters);
+          el.addEventListener("input", applyFilters);
+        });
+      }
+
+      async function loadData() {
+        const latest = await fetch("/runs/latest.json").then(r => r.json());
+        const runId = latest.runId;
+        const data = await fetch(`/runs/${runId}/per_query.json`).then(r => r.json());
+        allRecords = Array.isArray(data) ? data : [];
+
+        fillSelect(baselineEl, uniqueValues(allRecords, r => r.baseline));
+        fillSelect(experimentEl, uniqueValues(allRecords, r => r.experiment));
+        fillSelect(variantEl, uniqueValues(allRecords, r => r.variant));
+        statusEl.textContent = `Loaded run ${runId}`;
+        applyFilters();
+      }
+
+      attachHandlers();
+      loadData().catch(err => {
+        statusEl.textContent = "Failed to load run data.";
+        detailsEl.innerHTML = `<pre>${String(err && err.stack || err)}</pre>`;
+      });
+    </script>
+  </body>
 </html>
