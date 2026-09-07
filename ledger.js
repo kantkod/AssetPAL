@@ -69,23 +69,117 @@ export class TruthLedger {
     const scored = this.query(domain, subject, nowTs, queryScope);
     if (scored.length === 0) return { status: "NO_EVIDENCE", confidence: 0, picks: [] };
 
-    const top = scored[0];
-    const second = scored[1];
-
-    if (!second) {
-      const stableConf = clamp01(0.55 + 0.45 * (top.reliability ?? 0.5));
-      return { status: "SINGLE", confidence: stableConf, picks: [top] };
-    }
-
-    const conflict = top.value !== second.value;
-    const dominance = top.score / (top.score + second.score + 1e-9);
-
-    if (conflict && dominance < (1 - cfg.contradictionThreshold)) {
-      return { status: "CONFLICT", confidence: clamp01(dominance), picks: [top, second] };
-    }
-
-    return { status: "RESOLVED", confidence: clamp01(dominance), picks: [top] };
+    return (cfg.confidenceModel ?? "dominance") === "dominance"
+      ? decideByDominance(cfg, scored)
+      : decideByIndependence(cfg, scored);
   }
+}
+
+// Legacy model: compare the top two individual claims.
+//
+// Its flaw is that `dominance` scores corroboration and contradiction with the
+// same number. When the top two claims carry the *same* value they support each
+// other, yet dominance still lands near 0.5 and reads as low confidence — so the
+// ledger is least sure exactly when its best sources agree.
+function decideByDominance(cfg, scored) {
+  const top = scored[0];
+  const second = scored[1];
+
+  if (!second) {
+    return { status: "SINGLE", confidence: singleConfidence(top), picks: [top] };
+  }
+
+  const conflict = top.value !== second.value;
+  const dominance = top.score / (top.score + second.score + 1e-9);
+
+  if (conflict && dominance < (1 - cfg.contradictionThreshold)) {
+    return { status: "CONFLICT", confidence: clamp01(dominance), picks: [top, second] };
+  }
+
+  return { status: "RESOLVED", confidence: clamp01(dominance), picks: [top] };
+}
+
+// Independence model: compare *values*, not individual claims.
+//
+// Support for a value is accumulated per source with diminishing returns, so a
+// second independent source corroborating a claim adds real mass while the same
+// source repeating itself adds very little. Confidence is then the winning
+// value's mass against its best rival's — agreement raises it, contradiction
+// lowers it, and the two are no longer the same measurement.
+//
+// NOT THE DEFAULT — this model is kept for research, and it is a documented
+// negative result. It fixes the corroboration inversion above but opens a worse
+// hole: summing mass across sources means an attacker who spoofs a trusted
+// source manufactures an *apparent second independent witness* for the false
+// claim. On the swarm experiment it takes PAL from 0 false assertions to 48,
+// and in isolation it raises confidence in a spoofed claim from 0.68 to 0.85.
+// Independence cannot be inferred from a self-declared `source` field, because
+// that field is precisely what the attacker forges. Any future version needs
+// independence established out-of-band (distinct observation channels, signed
+// provenance) rather than assumed from the label.
+function decideByIndependence(cfg, scored) {
+  const rho = cfg.sameSourceCorrelation ?? 0.25;
+
+  const groups = new Map();
+  for (const c of scored) {
+    const key = String(c.value);
+    if (!groups.has(key)) groups.set(key, { value: c.value, claims: [] });
+    groups.get(key).claims.push(c);
+  }
+
+  for (const g of groups.values()) {
+    // Collapse exact duplicates first: one source asserting the same thing at
+    // the same timestamp is one piece of evidence however many copies exist.
+    const bySource = new Map();
+    for (const c of g.claims) {
+      const src = c.source ?? "unknown";
+      if (!bySource.has(src)) bySource.set(src, new Map());
+      const sigs = bySource.get(src);
+      const sig = `${c.timestamp}|${String(c.value)}`;
+      if (!sigs.has(sig) || sigs.get(sig) < c.score) sigs.set(sig, c.score);
+    }
+
+    let mass = 0;
+    for (const sigs of bySource.values()) {
+      const vals = [...sigs.values()].sort((a, b) => b - a);
+      // Repeated assertions from one source are correlated, not corroborating.
+      for (let i = 0; i < vals.length; i++) mass += vals[i] * Math.pow(rho, i);
+    }
+
+    g.mass = mass;
+    g.witnesses = bySource.size;
+    g.claims.sort((a, b) => b.score - a.score);
+  }
+
+  const ranked = [...groups.values()].sort((a, b) => b.mass - a.mass);
+  const win = ranked[0];
+  const rival = ranked[1];
+
+  if (!rival) {
+    return {
+      status: "SINGLE",
+      confidence: singleConfidence(win.claims[0]),
+      picks: [win.claims[0]],
+      witnesses: win.witnesses
+    };
+  }
+
+  const confidence = clamp01(win.mass / (win.mass + rival.mass + 1e-9));
+
+  if (confidence < (1 - cfg.contradictionThreshold)) {
+    return {
+      status: "CONFLICT",
+      confidence,
+      picks: [win.claims[0], rival.claims[0]],
+      witnesses: win.witnesses
+    };
+  }
+
+  return { status: "RESOLVED", confidence, picks: [win.claims[0]], witnesses: win.witnesses };
+}
+
+function singleConfidence(claim) {
+  return clamp01(0.55 + 0.45 * (claim.reliability ?? 0.5));
 }
 
 export function scopeMatchWeight(claimScope, queryScope, cfg) {

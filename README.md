@@ -209,6 +209,8 @@ All parameters live in `default.json`:
 | `futureTimestampPenalty` | 0.1 | Weight for claims dated after the query's `nowTs` |
 | `confidenceThreshold` | 0.65 | Below this dominance, PAL returns `UNCERTAIN` instead of answering |
 | `swarmModes` | `plain`, `spoof_future`, `spoof_now`, `spoof_past` | Which swarm attacks to run |
+| `confidenceModel` | `dominance` | `dominance` (default) or `independence` — see below |
+| `sameSourceCorrelation` | 0.25 | Independence model only: how much a source repeating itself corroborates |
 
 Note that `futureTimestampPenalty` is load-bearing well beyond its apparent scope: it is most of what defeats the `spoof_future` attack. `swarmSignaturePenalty` is the only size-dependent defence, and it is what PAL falls back on once an attacker stops post-dating.
 
@@ -222,10 +224,32 @@ What's implemented here is purely Ls — a shared claims pool with weighted reso
 
 ---
 
+## Confidence models — a negative result
+
+`decide()` supports two ways of turning scored claims into a confidence, selected by `confidenceModel`.
+
+**`dominance` (default).** Compare the top two individual claims: `confidence = top / (top + second)`. This is the original model, and it has a real flaw — it scores corroboration and contradiction with the same number. When the top two claims carry the *same* value they support each other, yet dominance still lands near 0.5 and the confidence gate reads that as "no clear winner". PAL is therefore least confident exactly when its best sources agree, which is why the cheapest way to jam it is **two** near-identical documents rather than forty.
+
+**`independence` (not default, kept for research).** Group claims by value; accumulate each value's support mass per source with diminishing returns (`sameSourceCorrelation`), so a second *independent* source adds real mass while one source repeating itself adds very little; then compare the winning value's mass against its best rival's. This does fix the inversion — two agreeing sources now produce high confidence, and a single source repeating itself does not.
+
+**It is not the default because it is worse where it matters.** Summing mass across sources means an attacker who spoofs a trusted source manufactures an *apparent second independent witness* for the false claim. The original low-trust adversarial document and the forged high-trust clones read as two sources agreeing:
+
+| | dominance | independence |
+|---|---|---|
+| Overall score | **90.3%** | 86.1% |
+| Swarm false assertions (24 scenarios) | **0** | **48** |
+| Confidence in a spoofed claim (isolated) | 0.68 | **0.85** |
+
+So the model that reasons more correctly about corroboration is the one more easily fooled by manufactured corroboration. The lesson generalises: **independence cannot be inferred from a self-declared `source` field, because that field is exactly what the attacker forges.** A Sybil attack is precisely the manufacture of apparent independence. Any future version needs independence established out-of-band — distinct observation channels, signed provenance, or a trust graph — rather than assumed from the label.
+
+This also qualifies a claim made elsewhere in this README. PAL's zero-false-assertion record under the dominance model is **not a designed guarantee**; it is emergent from the fact that competing clones tie for the top two slots and drag dominance down to ~0.5. Change the confidence model and the property disappears. It is a real and useful behaviour, but it is an artifact of the tie, not a property the ledger enforces.
+
+Both models are exercised by `test/confidence.test.js`, including the regression above, so neither can drift silently.
+
 ## Limitations
 
 - **PAL has a known, reproducible weakness: small spoofed floods dated at or before `nowTs` jam it into abstaining** (see the swarm section). This is deliberately left failing rather than tuned away — `swarmSignaturePenalty` could be raised until the numbers go green, but that would be fitting the constant to the test rather than fixing the mechanism. A real defence needs to key on the *shape* of a coordinated flood (a burst of near-identical claims from one source in a narrow window) or on corroboration across genuinely independent sources.
-- **PAL is least confident when its top two sources agree.** `decide()` computes `dominance = top / (top + second)` and treats a low value as low confidence — but when the top two claims carry the *same* value they corroborate each other, and confidence should rise, not fall. Two identical forged documents produce `dominance ≈ 0.51` and tip PAL into `UNCERTAIN`, which is why the cheapest jamming attack is two documents rather than forty. Corroboration and contradiction are currently scored with the same number.
+- **PAL is least confident when its top two sources agree**, and the obvious fix makes things worse. See "Confidence models" above: the inversion is real, but correcting it by summing support across sources opens a Sybil hole that costs more than the inversion does. This remains unfixed on purpose — the next attempt needs a notion of independence that an attacker cannot forge.
 - **The CY-lite torus projection is currently inert.** `ledger.query` filters candidates to a single `(domain, subject)` pair before scoring, and `theta` is a pure function of `(domain, subject)` — so every candidate receives a torus weight of exactly 1.0 and it cancels out of every comparison. It is listed as mechanism 6 above but contributes nothing to any decision today. It needs either a purpose (letting related subjects inform one another) or removal.
 - Retrieval is bag-of-words (Jaccard overlap). A real deployment would use dense embeddings, which interact differently with scope boundaries.
 - Source reliability is hand-assigned in the corpus generator. In production it would be learned or externally provided.
