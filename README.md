@@ -37,7 +37,7 @@ The synthetic corpus covers 4 domains (HR, SECURITY, PRICING, SUPPORT), each wit
 
 **Experiment 2 — Update**: Queries span four scope combinations (EU/PRO/A, EU/FREE/A, US/FREE/A, US/PRO/B) at two timestamps — before and after the v1 update. Expected behavior: adopt v1 for EU/PRO/A queries at t1, stay on v0 for all others.
 
-**Experiment 3 — Swarm**: Inject 0, 2, 5, 10, 20, 40 copies of the FALSE document in two modes (plain clones, spoofed-source clones). Expected behavior: accuracy holds as swarm size grows.
+**Experiment 3 — Swarm**: Inject 0, 2, 5, 10, 20, 40 copies of the FALSE document in four modes. `plain` keeps the clones on their own low-reliability Wiki source; the three `spoof_*` modes forge them as high-reliability PolicyPortal docs and differ only in how the attacker dates them relative to the query's `nowTs` — `spoof_future` (+5, post-dated), `spoof_now` (same tick), `spoof_past` (−1, back-dated but still newer than the real update). Expected behavior: accuracy holds as swarm size grows, in every mode.
 
 ### Four baselines
 
@@ -76,33 +76,38 @@ RERANK and VANILLA pick the most-recent document regardless of whether the updat
 
 ### Swarm resistance (accuracy at swarm sizes 0–40)
 
-Plain mode — clones keep their own low-reliability Wiki source:
+| Mode | Baseline | 0 | 2 | 5 | 10 | 20 | 40 |
+|---|---|---|---|---|---|---|---|
+| **plain** | VANILLA / MAJORITY | 100% | 0% | 0% | 0% | 0% | 0% |
+| | RERANK_REL_TIME | 100% | 100% | 100% | 100% | 100% | 100% |
+| | **PAL_LEDGER** | **100%** | **100%** | **100%** | **100%** | **100%** | **100%** |
+| **spoof_future** | VANILLA / MAJORITY | 100% | 0% | 0% | 0% | 0% | 0% |
+| | RERANK_REL_TIME | 100% | 0% | 0% | 0% | 0% | 0% |
+| | **PAL_LEDGER** | **100%** | **100%** | **100%** | **100%** | **100%** | **100%** |
+| **spoof_now** | VANILLA / MAJORITY | 100% | 0% | 0% | 0% | 0% | 0% |
+| | RERANK_REL_TIME | 100% | 0% | 0% | 0% | 0% | 0% |
+| | **PAL_LEDGER** | **100%** | 0% | 0% | 0% | 0% | **100%** |
+| **spoof_past** | VANILLA / MAJORITY | 100% | 0% | 0% | 0% | 0% | 0% |
+| | RERANK_REL_TIME | 100% | 0% | 0% | 0% | 0% | 0% |
+| | **PAL_LEDGER** | **100%** | 0% | 0% | 0% | **100%** | **100%** |
 
-| Baseline | size=0 | size=2 | size=5 | size=10 | size=20 | size=40 |
+Three things to read out of this table.
+
+**Reranking already handles naive floods.** `reliability × recency` is enough when the clones keep their own low-reliability source. Plain document flooding is not, on its own, a hard problem — only the counting baselines (VANILLA, MAJORITY) fall to it.
+
+**PAL's advantage over reranking is real but narrower than "survives spoofing".** PAL holds where RERANK collapses, but its margin in `spoof_future` comes substantially from `futureTimestampPenalty` — the clones are post-dated, so a flat ×0.1 lands on every one of them. Take that unforced error away (`spoof_now`, `spoof_past`) and only the signature penalty is left, which at small swarm sizes is too weak to separate the flood from the real update. The honest claim is therefore: **PAL is the only baseline that resists post-dated source spoofing, and the only one that never repeats the false claim under any spoof.**
+
+**PAL degrades into silence, never into error.** This is the important one. Across all four modes and all six sizes, PAL's `wrong` and `wrong_false` counts are **zero** — it is never argued into asserting the false value. Where it fails, it fails by returning `UNCERTAIN` or `CONFLICT`:
+
+| PAL, spoof_past | 0 | 2 | 5 | 10 | 20 | 40 |
 |---|---|---|---|---|---|---|
-| VANILLA_RAG | 100% | 0% | 0% | 0% | 0% | 0% |
-| MAJORITY_VOTE | 100% | 0% | 0% | 0% | 0% | 0% |
-| RERANK_REL_TIME | 100% | 100% | 100% | 100% | 100% | 100% |
-| **PAL_LEDGER** | **100%** | **100%** | **100%** | **100%** | **100%** | **100%** |
+| correct | 24 | 0 | 0 | 0 | 24 | 24 |
+| asserted FALSE | 0 | 0 | 0 | 0 | 0 | 0 |
+| abstained | 0 | 24 | 24 | 24 | 0 | 0 |
 
-Spoof mode — clones masquerade as high-reliability PolicyPortal with future timestamps:
+RERANK_REL_TIME, by contrast, asserts the false claim on all 24 queries at every size ≥ 2. So a spoofing attacker can mount an **availability** attack on PAL — jam it into refusing to answer — but not an **integrity** attack. Since the accuracy metric counts an unnecessary abstention as a miss, PAL's 0% cells above mean *"declined to answer"*, not *"believed the lie"*. That distinction is the whole point of the ledger, and it is worth keeping in view when reading the score.
 
-| Baseline | size=0 | size=2 | size=5 | size=10 | size=20 | size=40 |
-|---|---|---|---|---|---|---|
-| VANILLA_RAG | 100% | 0% | 0% | 0% | 0% | 0% |
-| MAJORITY_VOTE | 100% | 0% | 0% | 0% | 0% | 0% |
-| RERANK_REL_TIME | 100% | 0% | 0% | 0% | 0% | 0% |
-| **PAL_LEDGER** | **100%** | **100%** | **100%** | **100%** | **100%** | **100%** |
-
-This splits three ways, and the split is the sharpest result in the benchmark:
-
-- **VANILLA_RAG / MAJORITY_VOTE** fail at *any* swarm size in *either* mode. Both are counting-based, so quantity beats quality immediately.
-- **RERANK_REL_TIME** fully resists plain flooding — weighting by `reliability × recency` is enough when the clones are low-reliability Wiki docs. It collapses completely the moment the clones *spoof a trusted source*, because its ranking signal is exactly the thing being forged.
-- **PAL_LEDGER** resists both, because signature deduplication and the future-timestamp penalty key on the *shape* of the flood — identical `(source, timestamp, value)` tuples — rather than on the trustworthiness the flood claims for itself.
-
-The headline is therefore narrower and stronger than "PAL survives document floods": reranking already survives naive floods. **PAL is the only baseline that survives source spoofing.**
-
----
+**A quirk worth knowing:** PAL's spoof failure is *non-monotonic* — it recovers at large swarm sizes. The signature penalty is `1 / (1 + (n−1) × swarmSignaturePenalty)`, so a 40-clone flood is penalised ~8.8× while a 2-clone flood is penalised only 1.2×. A big obvious flood is easier to reject than a small subtle one. A patient attacker should therefore use *few* forged documents, not many — which is the opposite of what the original benchmark's design implied.
 
 ## How it works — PAL_LEDGER
 
@@ -190,6 +195,11 @@ All parameters live in `default.json`:
 | `scopeUnknownPenalty` | 0.6 | Weight when query has no scope metadata |
 | `swarmSignaturePenalty` | 0.2 | Per-clone weight reduction for identical signatures |
 | `maxSameSourceInfluence` | 3 | Max effective claims from the same source |
+| `futureTimestampPenalty` | 0.1 | Weight for claims dated after the query's `nowTs` |
+| `confidenceThreshold` | 0.65 | Below this dominance, PAL returns `UNCERTAIN` instead of answering |
+| `swarmModes` | `plain`, `spoof_future`, `spoof_now`, `spoof_past` | Which swarm attacks to run |
+
+Note that `futureTimestampPenalty` is load-bearing well beyond its apparent scope: it is most of what defeats the `spoof_future` attack. `swarmSignaturePenalty` is the only size-dependent defence, and it is what PAL falls back on once an attacker stops post-dating.
 
 ---
 
@@ -203,7 +213,9 @@ What's implemented here is purely Ls — a shared claims pool with weighted reso
 
 ## Limitations
 
-- **PAL currently scores 100% on all three experiments, so the benchmark is saturated.** It cleanly separates PAL from the baselines, but it no longer measures headroom — there is nothing left for a tuning change to improve, and a regression is the only thing it can now detect. The next useful step is adversarial cases PAL *doesn't* already pass: conflicting sources of equal reliability and equal timestamp, updates that partially overlap in scope, or swarms that vary their signatures to defeat the dedup key.
+- **PAL has a known, reproducible weakness: small spoofed floods dated at or before `nowTs` jam it into abstaining** (see the swarm section). This is deliberately left failing rather than tuned away — `swarmSignaturePenalty` could be raised until the numbers go green, but that would be fitting the constant to the test rather than fixing the mechanism. A real defence needs to key on the *shape* of a coordinated flood (a burst of near-identical claims from one source in a narrow window) or on corroboration across genuinely independent sources.
+- **The update experiment does not use a fair baseline.** Only PAL is given `query.scope`; `RERANK_REL_TIME` ranks on `reliability × recency` alone. A scope-aware reranker (`reliability × recency × scopeMatchWeight`, ~10 lines) also scores 100% on the update experiment. PAL's update win is therefore attributable to *having* scope metadata, not to the ledger. A `SCOPED_RERANK` baseline should be added so the comparison concedes that and isolates what the ledger uniquely contributes: conflict detection and spoof resistance.
+- **The CY-lite torus projection is currently inert.** `ledger.query` filters candidates to a single `(domain, subject)` pair before scoring, and `theta` is a pure function of `(domain, subject)` — so every candidate receives a torus weight of exactly 1.0 and it cancels out of every comparison. It is listed as mechanism 6 above but contributes nothing to any decision today. It needs either a purpose (letting related subjects inform one another) or removal.
 - Retrieval is bag-of-words (Jaccard overlap). A real deployment would use dense embeddings, which interact differently with scope boundaries.
 - Source reliability is hand-assigned in the corpus generator. In production it would be learned or externally provided.
 - The swarm experiment gives the swarm a retrieval advantage by construction (bait tokens) and then compensates by widening topK to `topK + swarmSize`, so retrieval is not itself under test — the resolution layer is.

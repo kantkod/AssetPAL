@@ -59,24 +59,64 @@ test("update: the four baselines are not accidentally identical to PAL", () => {
   assert.notEqual(update.PAL_LEDGER.accuracy, update.RERANK_REL_TIME.accuracy);
 });
 
-test("swarm: PAL holds 100% at every size, in both plain and spoof mode", () => {
+test("swarm: PAL never asserts the false claim, in any mode at any size", () => {
+  // The integrity invariant. PAL may be jammed into abstaining by a spoofed
+  // flood, but it must never be argued into repeating the false value. This is
+  // the property the ledger actually guarantees — guard it hardest.
   for (const [scenario, s] of Object.entries(swarm.PAL_LEDGER)) {
-    assert.equal(s.accuracy, 1, `PAL should hold at ${scenario}`);
+    assert.equal(s.wrong_false, 0, `PAL asserted the FALSE claim at ${scenario}`);
+    assert.equal(s.wrong, 0, `PAL gave a wrong answer at ${scenario}`);
   }
 });
 
-test("swarm: rerank resists plain flooding but collapses under source spoofing", () => {
-  // This three-tier split is the benchmark's sharpest result — guard it.
+test("swarm: PAL holds 100% against plain and post-dated spoof floods", () => {
+  for (const mode of ["plain", "spoof_future"]) {
+    for (const size of [0, 2, 5, 10, 20, 40]) {
+      assert.equal(swarm.PAL_LEDGER[`${mode}_swarm_${size}`].accuracy, 1,
+        `PAL should hold at ${mode}_swarm_${size}`);
+    }
+  }
+});
+
+test("swarm: same-tick and back-dated spoofs degrade PAL into abstention", () => {
+  // Documents a KNOWN WEAKNESS, not a desired result. futureTimestampPenalty
+  // does not fire when clones are dated at or before nowTs, so only the
+  // signature penalty is left — and at small swarm sizes it is too weak to
+  // separate the clones from the real update. PAL goes UNCERTAIN/CONFLICT
+  // rather than wrong. Update these expectations when the defence improves.
+  for (const mode of ["spoof_now", "spoof_past"]) {
+    for (const size of [2, 5, 10]) {
+      const s = swarm.PAL_LEDGER[`${mode}_swarm_${size}`];
+      assert.equal(s.accuracy, 0, `${mode}_swarm_${size} expected to fail today`);
+      assert.equal(s.abstain, s.total,
+        `${mode}_swarm_${size} should fail by abstaining, not by answering wrong`);
+    }
+  }
+});
+
+test("swarm: PAL recovers at large spoof sizes as the signature penalty bites", () => {
+  // Non-monotonic by construction: more clones means a heavier signature
+  // penalty, so a big flood is easier to reject than a small one.
+  assert.equal(swarm.PAL_LEDGER.spoof_now_swarm_40.accuracy, 1);
+  assert.equal(swarm.PAL_LEDGER.spoof_past_swarm_20.accuracy, 1);
+  assert.equal(swarm.PAL_LEDGER.spoof_past_swarm_40.accuracy, 1);
+});
+
+test("swarm: rerank resists plain flooding but is poisoned by every spoof variant", () => {
   const rr = swarm.RERANK_REL_TIME;
   for (const size of [2, 5, 10, 20, 40]) {
     assert.equal(rr[`plain_swarm_${size}`].accuracy, 1, `rerank plain ${size}`);
-    assert.equal(rr[`spoof_swarm_${size}`].accuracy, 0, `rerank spoof ${size}`);
+    for (const mode of ["spoof_future", "spoof_now", "spoof_past"]) {
+      assert.equal(rr[`${mode}_swarm_${size}`].accuracy, 0, `rerank ${mode} ${size}`);
+      assert.equal(rr[`${mode}_swarm_${size}`].wrong_false, rr[`${mode}_swarm_${size}`].total,
+        `rerank should assert the FALSE claim at ${mode}_swarm_${size}`);
+    }
   }
 });
 
 test("swarm: vanilla and majority collapse in both modes", () => {
   for (const b of ["VANILLA_RAG", "MAJORITY_VOTE"]) {
-    for (const mode of ["plain", "spoof"]) {
+    for (const mode of ["plain", "spoof_future", "spoof_now", "spoof_past"]) {
       assert.equal(swarm[b][`${mode}_swarm_0`].accuracy, 1, `${b} ${mode} baseline`);
       assert.equal(swarm[b][`${mode}_swarm_40`].accuracy, 0, `${b} ${mode} at 40`);
     }

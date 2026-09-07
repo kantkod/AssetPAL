@@ -18,7 +18,9 @@
   ],
   "swarmModes": [
     "plain",
-    "spoof"
+    "spoof_future",
+    "spoof_now",
+    "spoof_past"
   ],
   "baitStrength": 3,
   "debugQueryId": null,
