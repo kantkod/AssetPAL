@@ -88,7 +88,7 @@ export class TruthLedger {
   }
 }
 
-function scopeMatchWeight(claimScope, queryScope, cfg) {
+export function scopeMatchWeight(claimScope, queryScope, cfg) {
   if (!queryScope || Object.keys(queryScope).length === 0) return cfg.scopeUnknownPenalty ?? 0.6;
   if (!claimScope) return cfg.scopeUnknownPenalty ?? 0.6;
 

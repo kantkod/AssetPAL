@@ -54,6 +54,29 @@ test("update: PAL respects scope, baselines over-update", () => {
   }
 });
 
+test("SCOPED_RERANK isolates what the ledger actually contributes", () => {
+  // Scope-awareness alone (rerank x scopeMatchWeight, no ledger) fully closes
+  // the update gap — so PAL's update win belongs to the metadata, not the
+  // ledger. What it cannot close is conflict detection and spoof integrity.
+  assert.equal(update.SCOPED_RERANK.accuracy, 1, "scope alone wins the update experiment");
+  assert.equal(update.SCOPED_RERANK.over_update_rate, 0);
+
+  assert.equal(conflict.SCOPED_RERANK.accuracy, 0.5, "but it cannot detect conflicts");
+  assert.equal(conflict.SCOPED_RERANK.conflict_marked, 0, "it never abstains");
+  assert.ok(conflict.PAL_LEDGER.accuracy > conflict.SCOPED_RERANK.accuracy,
+    "PAL must beat the honest strong baseline on conflict");
+});
+
+test("SCOPED_RERANK is poisoned by spoofing; PAL is not", () => {
+  let scoped = 0, pal = 0;
+  for (const k of Object.keys(swarm.SCOPED_RERANK)) {
+    scoped += swarm.SCOPED_RERANK[k].wrong_false;
+    pal += swarm.PAL_LEDGER[k].wrong_false;
+  }
+  assert.ok(scoped > 0, "scope-awareness gives no protection against spoofing");
+  assert.equal(pal, 0, "PAL never asserts the false claim");
+});
+
 test("update: the four baselines are not accidentally identical to PAL", () => {
   // Regression for PR #7: a wildcard-scoped FALSE doc once made all four agree.
   assert.notEqual(update.PAL_LEDGER.accuracy, update.RERANK_REL_TIME.accuracy);

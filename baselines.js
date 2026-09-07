@@ -1,9 +1,10 @@
-import { TruthLedger } from "./ledger.js";
+import { TruthLedger, scopeMatchWeight } from "./ledger.js";
 
 export const BASELINES = {
   VANILLA_RAG: "VANILLA_RAG",
   MAJORITY_VOTE: "MAJORITY_VOTE",
   RERANK_REL_TIME: "RERANK_REL_TIME",
+  SCOPED_RERANK: "SCOPED_RERANK",
   PAL_LEDGER: "PAL_LEDGER"
 };
 
@@ -45,6 +46,23 @@ export function answerWithBaseline(name, cfg, retrievedDocs, query){
       const c = (d.claims||[]).find(x => x.domain===query.domain && x.subject===query.subject);
       if (!c) continue;
       const score = (d.reliability ?? 0.5) * timeBoost(query.nowTs, d.timestamp);
+      if (!best || score > best.score) best = { value:c.value, score, docId:d.id };
+    }
+    if (!best) return { status:"NO_ANSWER", value:null, confidence:0.0, evidence:[] };
+    return { status:"ANSWER", value:best.value, confidence:Math.max(0.5, Math.min(0.95, best.score)), evidence:[best.docId] };
+  }
+
+  if (name === BASELINES.SCOPED_RERANK) {
+    // RERANK_REL_TIME plus PAL's own scope-match weight, and nothing else: no
+    // ledger, no conflict detection, no swarm/source penalties. This is the
+    // honest strong baseline. Any advantage PAL keeps over it is attributable
+    // to the ledger, not merely to having been handed query.scope.
+    let best = null;
+    for (const d of retrievedDocs) {
+      const c = (d.claims||[]).find(x => x.domain===query.domain && x.subject===query.subject);
+      if (!c) continue;
+      const sw = scopeMatchWeight(c.scope, query.scope, cfg);
+      const score = (d.reliability ?? 0.5) * timeBoost(query.nowTs, d.timestamp) * sw;
       if (!best || score > best.score) best = { value:c.value, score, docId:d.id };
     }
     if (!best) return { status:"NO_ANSWER", value:null, confidence:0.0, evidence:[] };

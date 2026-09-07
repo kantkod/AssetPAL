@@ -46,7 +46,10 @@ The synthetic corpus covers 4 domains (HR, SECURITY, PRICING, SUPPORT), each wit
 | `VANILLA_RAG` | Return the first claim found in top-k |
 | `MAJORITY_VOTE` | Count claim values across retrieved docs, return the plurality |
 | `RERANK_REL_TIME` | Score each claim by `reliability × recency`, return the top scorer |
+| `SCOPED_RERANK` | As above, times PAL's own scope-match weight. No ledger, no conflict detection, no swarm penalties |
 | `PAL_LEDGER` | Weighted ledger with provenance, scope matching, conflict detection, and swarm signature deduplication |
+
+`SCOPED_RERANK` exists to keep the comparison honest. PAL was for a long time the only baseline handed `query.scope`, which made the update experiment look like a win for the ledger when it was really a win for the metadata. Giving a plain reranker the same scope weight closes that gap entirely, so whatever margin PAL keeps over `SCOPED_RERANK` is attributable to the ledger itself.
 
 ---
 
@@ -59,6 +62,7 @@ The synthetic corpus covers 4 domains (HR, SECURITY, PRICING, SUPPORT), each wit
 | VANILLA_RAG | 16.7% | 16.7% |
 | MAJORITY_VOTE | 16.7% | 16.7% |
 | RERANK_REL_TIME | 50% | 50% |
+| SCOPED_RERANK | 50% | 50% |
 | **PAL_LEDGER** | **100%** | **100%** |
 
 PAL_LEDGER detects all 24 hard conflicts and returns `CONFLICT` instead of guessing, and resolves all 24 soft conflicts to the correct value. No other baseline ever returns `CONFLICT` at all — they answer confidently every time, and are simply wrong on the hard-conflict half.
@@ -70,7 +74,10 @@ PAL_LEDGER detects all 24 hard conflicts and returns `CONFLICT` instead of guess
 | VANILLA_RAG | 62.5% | 25% | 75% |
 | MAJORITY_VOTE | 62.5% | 25% | 75% |
 | RERANK_REL_TIME | 62.5% | 25% | 75% |
+| SCOPED_RERANK | **100%** | **100%** | **0%** |
 | **PAL_LEDGER** | **100%** | **100%** | **0%** |
+
+**`SCOPED_RERANK` ties PAL here.** Scope matching is table stakes, not a ledger feature — roughly ten lines bolted onto a reranker reproduces the entire result. The update experiment shows that scope-aware resolution beats recency-only resolution; it does not, on its own, show that the ledger is doing anything.
 
 RERANK and VANILLA pick the most-recent document regardless of whether the update applies to the query's scope. PAL_LEDGER uses scope matching: EU/PRO/A queries adopt v1, everything else stays on v0.
 
@@ -91,11 +98,15 @@ RERANK and VANILLA pick the most-recent document regardless of whether the updat
 | | RERANK_REL_TIME | 100% | 0% | 0% | 0% | 0% | 0% |
 | | **PAL_LEDGER** | **100%** | 0% | 0% | 0% | **100%** | **100%** |
 
+`SCOPED_RERANK` behaves identically to `RERANK_REL_TIME` in every swarm scenario and is omitted from the table for space: the clones carry the same scope as the real update, so scope weighting cannot separate them. Across the 24 swarm scenarios it asserts the false claim **360 times**; PAL asserts it **zero** times.
+
 Three things to read out of this table.
 
 **Reranking already handles naive floods.** `reliability × recency` is enough when the clones keep their own low-reliability source. Plain document flooding is not, on its own, a hard problem — only the counting baselines (VANILLA, MAJORITY) fall to it.
 
 **PAL's advantage over reranking is real but narrower than "survives spoofing".** PAL holds where RERANK collapses, but its margin in `spoof_future` comes substantially from `futureTimestampPenalty` — the clones are post-dated, so a flat ×0.1 lands on every one of them. Take that unforced error away (`spoof_now`, `spoof_past`) and only the signature penalty is left, which at small swarm sizes is too weak to separate the flood from the real update. The honest claim is therefore: **PAL is the only baseline that resists post-dated source spoofing, and the only one that never repeats the false claim under any spoof.**
+
+**What the ledger uniquely buys you.** Against the honest strong baseline, PAL's contribution reduces to exactly two things: it detects conflicts and abstains (100% vs 50% on the conflict experiment), and it never repeats a spoofed claim (0 false assertions vs 360). Everything else `SCOPED_RERANK` matches.
 
 **PAL degrades into silence, never into error.** This is the important one. Across all four modes and all six sizes, PAL's `wrong` and `wrong_false` counts are **zero** — it is never argued into asserting the false value. Where it fails, it fails by returning `UNCERTAIN` or `CONFLICT`:
 
@@ -214,7 +225,7 @@ What's implemented here is purely Ls — a shared claims pool with weighted reso
 ## Limitations
 
 - **PAL has a known, reproducible weakness: small spoofed floods dated at or before `nowTs` jam it into abstaining** (see the swarm section). This is deliberately left failing rather than tuned away — `swarmSignaturePenalty` could be raised until the numbers go green, but that would be fitting the constant to the test rather than fixing the mechanism. A real defence needs to key on the *shape* of a coordinated flood (a burst of near-identical claims from one source in a narrow window) or on corroboration across genuinely independent sources.
-- **The update experiment does not use a fair baseline.** Only PAL is given `query.scope`; `RERANK_REL_TIME` ranks on `reliability × recency` alone. A scope-aware reranker (`reliability × recency × scopeMatchWeight`, ~10 lines) also scores 100% on the update experiment. PAL's update win is therefore attributable to *having* scope metadata, not to the ledger. A `SCOPED_RERANK` baseline should be added so the comparison concedes that and isolates what the ledger uniquely contributes: conflict detection and spoof resistance.
+- **PAL is least confident when its top two sources agree.** `decide()` computes `dominance = top / (top + second)` and treats a low value as low confidence — but when the top two claims carry the *same* value they corroborate each other, and confidence should rise, not fall. Two identical forged documents produce `dominance ≈ 0.51` and tip PAL into `UNCERTAIN`, which is why the cheapest jamming attack is two documents rather than forty. Corroboration and contradiction are currently scored with the same number.
 - **The CY-lite torus projection is currently inert.** `ledger.query` filters candidates to a single `(domain, subject)` pair before scoring, and `theta` is a pure function of `(domain, subject)` — so every candidate receives a torus weight of exactly 1.0 and it cancels out of every comparison. It is listed as mechanism 6 above but contributes nothing to any decision today. It needs either a purpose (letting related subjects inform one another) or removal.
 - Retrieval is bag-of-words (Jaccard overlap). A real deployment would use dense embeddings, which interact differently with scope boundaries.
 - Source reliability is hand-assigned in the corpus generator. In production it would be learned or externally provided.
