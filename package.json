@@ -12,6 +12,7 @@
     "run:swarm": "node run_experiment_swarm.js",
     "run:all": "node run_all.js",
     "bench": "node bench.js",
+    "test": "node --test test/*.test.js",
     "inspect": "node site/server.js"
   }
 }

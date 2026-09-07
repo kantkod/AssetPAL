@@ -1,5 +1,5 @@
 [build]
-  command = "node index.js && npm run build && cp results.json public/results.json"
+  command = "npm run build && cp results.json public/results.json"
   publish = "public"
   functions = "netlify/functions"
 

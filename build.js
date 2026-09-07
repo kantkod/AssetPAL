@@ -1,31 +1,13 @@
 import fs from "fs";
 import { runAll } from "./run_all.js";
+import { overallScore } from "./scoring.js";
 
 async function build() {
   console.log("Running experiments...");
   const results = await runAll();
 
-  // Compute overall score
-  let total = 0, correct = 0;
-  for (const expName of Object.keys(results)) {
-    const exp = results[expName];
-    if (!exp) continue;
-    const pal = exp["PAL_LEDGER"] || null;
-    if (!pal) continue;
-    if (typeof pal.total === "number") {
-      total += pal.total;
-      correct += pal.correct || 0;
-    } else {
-      // Nested structure (swarm): { "plain_swarm_0": { total, correct, ... }, ... }
-      for (const s of Object.values(pal)) {
-        if (s && typeof s.total === "number") {
-          total += s.total;
-          correct += s.correct || 0;
-        }
-      }
-    }
-  }
-  const score = total > 0 ? correct / total : 0;
+  const score = overallScore(results);
+
   const out = { score, results };
 
   // Write results.json for reference

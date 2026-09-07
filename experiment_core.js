@@ -70,8 +70,14 @@ function toPerQueryRecord({ experiment, variant, baseline, q, top, result }) {
     claimValue: claimValueForDoc(d, q)
   }));
 
+  // A genuine-conflict query (expected === "CONFLICT") is answered correctly by
+  // flagging CONFLICT; anything confidently asserted there is a miss.
+  const isCorrect = q.expected === "CONFLICT"
+    ? result.status === "CONFLICT"
+    : result.status === "ANSWER" && result.value === q.expected;
+
   let wrongType = null;
-  if (result.status === "ANSWER" && result.value !== q.expected) {
+  if (!isCorrect && result.status === "ANSWER") {
     const v = String(result.value || "");
     if (v.startsWith("FALSE_")) wrongType = "FALSE";
     else if (v.startsWith("v0_")) wrongType = "v0";
@@ -101,7 +107,7 @@ function toPerQueryRecord({ experiment, variant, baseline, q, top, result }) {
       options: Array.isArray(result.options) ? result.options : []
     },
     label: {
-      isCorrect: result.status === "ANSWER" && result.value === q.expected,
+      isCorrect,
       wrongType
     }
   };
@@ -134,15 +140,9 @@ export function runConflictCore(cfg, corpus, queries) {
         }
       }
 
-      if (q.hardConflict) {
-        const scored = {
-          ...r,
-          value: r.status === "CONFLICT" ? "CONFLICT" : r.value
-        };
-        scoreResult(sum, q, scored);
-      } else {
-        scoreResult(sum, q, r);
-      }
+      // Hard-conflict queries carry expected === "CONFLICT"; scoreResult
+      // credits a CONFLICT status against that directly.
+      scoreResult(sum, q, r);
 
       perQuery.push(toPerQueryRecord({
         experiment: "conflict",

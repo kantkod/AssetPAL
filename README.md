@@ -56,34 +56,51 @@ The synthetic corpus covers 4 domains (HR, SECURITY, PRICING, SUPPORT), each wit
 
 | Baseline | accuracy | conflict_good_rate |
 |---|---|---|
-| VANILLA_RAG | ~17% | ~17% |
-| MAJORITY_VOTE | ~17% | ~17% |
-| RERANK_REL_TIME | ~50% | ~50% |
-| **PAL_LEDGER** | **50% (abstains on hard conflicts)** | **100%** |
+| VANILLA_RAG | 16.7% | 16.7% |
+| MAJORITY_VOTE | 16.7% | 16.7% |
+| RERANK_REL_TIME | 50% | 50% |
+| **PAL_LEDGER** | **100%** | **100%** |
 
-PAL_LEDGER detects all hard conflicts and returns `CONFLICT` status instead of guessing. Other baselines either guess wrong or get lucky on the soft-conflict subset.
+PAL_LEDGER detects all 24 hard conflicts and returns `CONFLICT` instead of guessing, and resolves all 24 soft conflicts to the correct value. No other baseline ever returns `CONFLICT` at all — they answer confidently every time, and are simply wrong on the hard-conflict half.
 
 ### Update
 
 | Baseline | accuracy | adopted_new_rate | over_update_rate |
 |---|---|---|---|
-| VANILLA_RAG | ~62.5% | ~25% | ~75% |
-| MAJORITY_VOTE | ~62.5% | ~25% | ~75% |
-| RERANK_REL_TIME | ~62.5% | ~25% | ~75% |
-| **PAL_LEDGER** | **~100%** | **~100%** | **~0%** |
+| VANILLA_RAG | 62.5% | 25% | 75% |
+| MAJORITY_VOTE | 62.5% | 25% | 75% |
+| RERANK_REL_TIME | 62.5% | 25% | 75% |
+| **PAL_LEDGER** | **100%** | **100%** | **0%** |
 
 RERANK and VANILLA pick the most-recent document regardless of whether the update applies to the query's scope. PAL_LEDGER uses scope matching: EU/PRO/A queries adopt v1, everything else stays on v0.
 
 ### Swarm resistance (accuracy at swarm sizes 0–40)
 
-| Baseline | size=0 | size=2 | size=5 | size=10 | size=40 |
-|---|---|---|---|---|---|
-| VANILLA_RAG | 100% | 0% | 0% | 0% | 0% |
-| MAJORITY_VOTE | 100% | 0% | 0% | 0% | 0% |
-| RERANK_REL_TIME | 100% | 0% | 0% | 0% | 0% |
-| **PAL_LEDGER** | **100%** | **100%** | **100%** | **100%** | **100%** |
+Plain mode — clones keep their own low-reliability Wiki source:
 
-Source deduplication and swarm signature penalty collapse the influence of cloned documents. Spoofed-source mode (swarm docs masquerade as PolicyPortal) is also handled via signature deduplication.
+| Baseline | size=0 | size=2 | size=5 | size=10 | size=20 | size=40 |
+|---|---|---|---|---|---|---|
+| VANILLA_RAG | 100% | 0% | 0% | 0% | 0% | 0% |
+| MAJORITY_VOTE | 100% | 0% | 0% | 0% | 0% | 0% |
+| RERANK_REL_TIME | 100% | 100% | 100% | 100% | 100% | 100% |
+| **PAL_LEDGER** | **100%** | **100%** | **100%** | **100%** | **100%** | **100%** |
+
+Spoof mode — clones masquerade as high-reliability PolicyPortal with future timestamps:
+
+| Baseline | size=0 | size=2 | size=5 | size=10 | size=20 | size=40 |
+|---|---|---|---|---|---|---|
+| VANILLA_RAG | 100% | 0% | 0% | 0% | 0% | 0% |
+| MAJORITY_VOTE | 100% | 0% | 0% | 0% | 0% | 0% |
+| RERANK_REL_TIME | 100% | 0% | 0% | 0% | 0% | 0% |
+| **PAL_LEDGER** | **100%** | **100%** | **100%** | **100%** | **100%** | **100%** |
+
+This splits three ways, and the split is the sharpest result in the benchmark:
+
+- **VANILLA_RAG / MAJORITY_VOTE** fail at *any* swarm size in *either* mode. Both are counting-based, so quantity beats quality immediately.
+- **RERANK_REL_TIME** fully resists plain flooding — weighting by `reliability × recency` is enough when the clones are low-reliability Wiki docs. It collapses completely the moment the clones *spoof a trusted source*, because its ranking signal is exactly the thing being forged.
+- **PAL_LEDGER** resists both, because signature deduplication and the future-timestamp penalty key on the *shape* of the flood — identical `(source, timestamp, value)` tuples — rather than on the trustworthiness the flood claims for itself.
+
+The headline is therefore narrower and stronger than "PAL survives document floods": reranking already survives naive floods. **PAL is the only baseline that survives source spoofing.**
 
 ---
 
@@ -129,12 +146,32 @@ npm run gen
 npm run bench
 
 # Or run experiments individually
-npm run conflict
-npm run update
-npm run swarm
+npm run run:conflict
+npm run run:update
+npm run run:swarm
+
+# Run the test suite
+npm test
 ```
 
-Results are written to `results/runs/<timestamp>/summary.json` and also to `results.json` at the project root.
+`npm run bench` writes `runs/<runId>/{summary,per_query,config,meta}.json`, updates `runs/latest.json`, and writes `results.json` at the project root.
+
+### Inspecting a run
+
+```bash
+npm run inspect   # serves site/inspect.html on :3000
+```
+
+The inspector is a **local dev tool only** — it reads `runs/`, which is gitignored, and is deliberately not copied into the Netlify build. Per-query traces run to ~7 MB, which is not something the public demo should download. Use it in a devcontainer/Codespace after `npm run bench`.
+
+### Scoring
+
+One scoring rule, defined once in `scoring.js`, is shared by the CLI (`bench.js`, `index.js`), the static build (`build.js`) and the Netlify function — so the terminal and the deployed site can never report different numbers for the same run.
+
+- A summary's accuracy is `correct / total`.
+- Flagging `CONFLICT` on a query whose expected answer *is* `CONFLICT` counts as **correct**, not as an abstention. This is the whole point of the conflict experiment: refusing to guess is the right answer.
+- Flagging `CONFLICT` on an ordinary value query counts as an abstention, and an unnecessary abstention counts against you exactly as a wrong answer does.
+- The overall score averages the three experiments **equally**, so the 192-query update experiment does not drown out the 48-query conflict experiment. Swarm scenarios are averaged among themselves first.
 
 ---
 
@@ -166,6 +203,9 @@ What's implemented here is purely Ls — a shared claims pool with weighted reso
 
 ## Limitations
 
+- **PAL currently scores 100% on all three experiments, so the benchmark is saturated.** It cleanly separates PAL from the baselines, but it no longer measures headroom — there is nothing left for a tuning change to improve, and a regression is the only thing it can now detect. The next useful step is adversarial cases PAL *doesn't* already pass: conflicting sources of equal reliability and equal timestamp, updates that partially overlap in scope, or swarms that vary their signatures to defeat the dedup key.
 - Retrieval is bag-of-words (Jaccard overlap). A real deployment would use dense embeddings, which interact differently with scope boundaries.
 - Source reliability is hand-assigned in the corpus generator. In production it would be learned or externally provided.
+- The swarm experiment gives the swarm a retrieval advantage by construction (bait tokens) and then compensates by widening topK to `topK + swarmSize`, so retrieval is not itself under test — the resolution layer is.
 - The benchmark covers three specific failure modes. It is not a general RAG eval.
+- No LICENSE file yet. Add one before making the repo public.

@@ -1,5 +1,6 @@
 import { runConflictCore, runUpdateCore, runSwarmCore } from "../../experiment_core.js";
 import { corpus, queries, config as defaultConfig } from "./_data.js";
+import { overallScore } from "../../scoring.js";
 
 export default async (req) => {
   try {
@@ -18,25 +19,7 @@ export default async (req) => {
       results.swarm = runSwarmCore(cfg, corpus, queries.swarm).results;
     }
 
-    // Compute score
-    let total = 0, correct = 0;
-    for (const exp of Object.values(results)) {
-      const pal = exp?.["PAL_LEDGER"];
-      if (!pal) continue;
-      if (typeof pal.total === "number") {
-        total += pal.total;
-        correct += pal.correct || 0;
-      } else {
-        // Nested structure (swarm): { "plain_swarm_0": { total, correct, ... }, ... }
-        for (const s of Object.values(pal)) {
-          if (s && typeof s.total === "number") {
-            total += s.total;
-            correct += s.correct || 0;
-          }
-        }
-      }
-    }
-    const score = total > 0 ? correct / total : 0;
+    const score = overallScore(results);
 
     return new Response(JSON.stringify({ score, results }), {
       headers: { "Content-Type": "application/json" }
