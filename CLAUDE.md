@@ -10,7 +10,7 @@ Zero runtime dependencies. Node 22. Everything is seeded and reproducible.
 
 ```bash
 npm run gen     # generate the synthetic corpus -> results/corpus/
-npm test        # 29 tests; self-bootstraps the corpus if missing
+npm test        # 41 tests; self-bootstraps the corpus if missing
 npm run bench   # full run -> runs/<runId>/ + results.json
 npm run build   # static site -> public/ (this is the Netlify build)
 npm run inspect # local-only per-query inspector on :3000
@@ -31,6 +31,9 @@ never commit them.
 | `metrics.js` | Per-query scoring into a summary |
 | `scoring.js` | **Single source of truth** for the overall score |
 | `bench.js` / `index.js` / `build.js` / `netlify/functions/run-experiment.js` | The four surfaces that report a score |
+| `test/benchmark.test.js` | End-to-end guards on the numbers the README publishes |
+| `test/scoring.test.js` / `test/confidence.test.js` | Scoring rules; the dominance vs independence models |
+| `test/invariants.test.js` | Structural guards: one scoring rule, torus inertness, corpus hash, the attack generator's contract |
 
 ## Invariants — do not break these
 
@@ -82,11 +85,18 @@ If a change makes these green, verify *why* before believing it.
   Change the confidence model and it disappears. Do not describe it as a
   guarantee.
 
-- **The CY-lite torus weight is inert.** `ledger.query` filters candidates to one
-  `(domain, subject)` pair and `theta` is a pure function of that pair, so every
-  candidate gets exactly 1.0 and it cancels out. Listed as mechanism 6 in the
-  README but contributes nothing. Either give it a job (cross-subject
-  interference) or delete it and its `cy*` config knobs.
+- **The CY-lite torus weight is inert.** `theta` is a pure function of
+  `(domain, subject)`, and candidates are filtered to a single such pair, so
+  every candidate gets the same weight and it cancels out. Listed as mechanism 6
+  in the README but contributes nothing — pinned by two tests in
+  `test/invariants.test.js`, including at extreme `cySigma`/`cyBeta`.
+
+  **The filter that matters is `baselines.js:77`, not `ledger.query`.** The
+  caller narrows claims to one `(domain, subject)` *before* upserting them, and
+  `ledger.query:17` then filters the same way again, redundantly. Widening only
+  the `ledger.query` gate changes nothing and looks like the torus is
+  permanently dead; both gates have to open before it can do anything. Either
+  give it a job (cross-subject interference) or delete it and its `cy*` knobs.
 
 - **Swarm non-monotonicity.** PAL fails at small flood sizes and recovers at
   large ones, because `1/(1 + λ(n−1))` penalises a big flood ~8.8× and a small
@@ -124,6 +134,12 @@ If a change makes these green, verify *why* before believing it.
 
 - Run `npm test` before pushing. Prefer adding a pinned test over a prose note
   when you discover a behaviour worth keeping.
+- Changing the corpus (the seed, the generator, a document body) moves every
+  published number. `test/invariants.test.js` pins its SHA-256 for that reason:
+  when the change is deliberate, re-run `npm run bench`, update the README
+  tables and update the pinned hashes in the same commit.
+- A guard that cannot fail is decorative. When adding one, break the invariant
+  on purpose once and confirm the test goes red before trusting it.
 - When a result is a negative one, keep the code flag-gated and documented rather
   than reverting it — the finding is the value.
 - The README is the public artifact and is expected to be honest about
