@@ -1,14 +1,21 @@
 import { readJson, writeJson, ensureDir } from "./io.js";
 import { makeRng, choice, shuffle } from "./rng.js";
 import { projectToTorus } from "./torus.js";
+import { signClaim } from "./provenance.js";
 import path from "path";
 
 function makeDoc({ id, domain, timestamp, source, reliability, text, claims }) {
   return { id, domain, timestamp, source, reliability, text, claims };
 }
 
+// Set once per generation run. Every claim the generator emits is genuine by
+// construction, so every claim gets a valid tag from the source it names; the
+// only unsigned or mis-signed claims in the benchmark are the ones an attacker
+// manufactures at query time.
+let SIGNING_SEED = null;
+
 function claim(domain, subject, value, timestamp, source, reliability, docId, scope) {
-  return {
+  const c = {
     domain,
     subject,
     value,
@@ -19,6 +26,8 @@ function claim(domain, subject, value, timestamp, source, reliability, docId, sc
     scope,
     theta: projectToTorus(domain, subject)
   };
+  c.sig = signClaim(c, SIGNING_SEED);
+  return c;
 }
 
 function scope(region, tier, product, validFrom, validTo) {
@@ -28,6 +37,7 @@ function scope(region, tier, product, validFrom, validTo) {
 export async function generateCorpus(configPath = "./default.json") {
   const cfg = readJson(configPath);
   const rand = makeRng(cfg.seed);
+  SIGNING_SEED = cfg.provenanceSeed ?? cfg.seed;
 
   const corpusDir = "./results/corpus";
   ensureDir(corpusDir);

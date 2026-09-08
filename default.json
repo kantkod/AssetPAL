@@ -42,5 +42,7 @@
   "swarmSignaturePenalty": 0.2,
   "futureTimestampPenalty": 0.1,
   "confidenceModel": "dominance",
-  "sameSourceCorrelation": 0.25
+  "sameSourceCorrelation": 0.25,
+  "verifyProvenance": false,
+  "unverifiedReliability": 0.3
 }

@@ -205,6 +205,8 @@ All parameters live in `default.json`:
 | `scopeWildcardPenalty` | 0.75 | Weight for claims that match via wildcard (`*`) |
 | `scopeUnknownPenalty` | 0.6 | Weight when query has no scope metadata |
 | `swarmSignaturePenalty` | 0.2 | Per-clone weight reduction for identical signatures |
+| `verifyProvenance` | false | Verify each claim's provenance tag; unverified claims lose the named source's identity and reliability |
+| `unverifiedReliability` | 0.3 | Reliability ceiling applied to a claim whose tag does not verify |
 | `maxSameSourceInfluence` | 3 | Max effective claims from the same source |
 | `futureTimestampPenalty` | 0.1 | Weight for claims dated after the query's `nowTs` |
 | `confidenceThreshold` | 0.65 | Below this dominance, PAL returns `UNCERTAIN` instead of answering |
@@ -246,10 +248,69 @@ This also qualifies a claim made elsewhere in this README. PAL's zero-false-asse
 
 Both models are exercised by `test/confidence.test.js`, including the regression above, so neither can drift silently.
 
+**This diagnosis has since been tested directly, and it was correct** — see the next section. Establishing identity out of band takes the independence model from 48 false assertions to zero.
+
+---
+
+## Unforgeable provenance — the negative result, resolved
+
+The section above ends by arguing that independence cannot be inferred from a self-declared `source` field, and that a real fix needs identity established out of band. That is now implemented (`provenance.js`) and measured, and the argument holds up.
+
+### Why content analysis cannot work
+
+It is tempting to look for a giveaway in the documents themselves — a source contradicting itself, say. The corpus rules this out. `PolicyPortal` legitimately asserts `v1_<subject>_B` at t=20 and `HC_<subject>_A` at t=30, both scoped `EU/PRO/A`. A forged `PolicyPortal` document asserting a false value at t=22 is *the same shape*: one label, one scope, two values, different timestamps. Separating them means picking a time window, which is fitting a constant to the test rather than fixing the mechanism. **A genuine policy update and a forgery are the same bytes with different intent**, so no amount of content analysis distinguishes them.
+
+### The mechanism
+
+Each source holds a secret. Every claim carries a tag over its own semantic content — domain, subject, value, timestamp, scope, and the source it names — computed with that source's secret. Anyone can verify a tag; only the real source can mint one.
+
+The ledger then keys identity on what a claim can *prove* rather than what it asserts:
+
+- A claim whose tag verifies keeps its source's name and reliability.
+- A claim whose tag does not verify becomes `unverified`: it cannot borrow the reputation of the source it names (reliability drops to `unverifiedReliability`), and — the part that matters — **every unverified claim collapses into one anonymous identity**. Source deduplication, swarm-signature counting and witness counting all key on identity, so a thousand forged documents are one unknown speaker, not a thousand corroborating ones.
+
+Enabled with `verifyProvenance: true`. It is **off by default**, so every other number in this README is unaffected.
+
+### Results
+
+| Configuration | Overall score | Swarm accuracy | Swarm false assertions |
+|---|---|---|---|
+| `dominance` + verify off *(shipped default)* | 90.3% | 70.8% | 0 |
+| **`dominance` + verify on** | **97.2%** | **91.7%** | **0** |
+| `independence` + verify off | 86.1% | 58.3% | **48** |
+| `independence` + verify on | 93.1% | 79.2% | **0** |
+
+PAL_LEDGER accuracy per swarm mode:
+
+| Mode | verify | 0 | 2 | 5 | 10 | 20 | 40 |
+|---|---|---|---|---|---|---|---|
+| plain | off | 100% | 100% | 100% | 100% | 100% | 100% |
+| plain | **on** | 100% | 100% | 100% | 100% | 100% | 100% |
+| spoof_future | off | 100% | 100% | 100% | 100% | 100% | 100% |
+| spoof_future | **on** | 100% | 100% | 100% | 100% | 100% | 100% |
+| spoof_now | off | 100% | 0% | 0% | 0% | 0% | 100% |
+| spoof_now | **on** | 100% | 0% | 0% | **100%** | **100%** | 100% |
+| spoof_past | off | 100% | 0% | 0% | 0% | 100% | 100% |
+| spoof_past | **on** | 100% | **100%** | **100%** | **100%** | 100% | 100% |
+
+### What to read out of this
+
+**The Sybil hole was entirely an identity problem.** The independence model asserted the false claim 48 times because a forgery counted as a second independent witness. With identity verified it asserts it zero times. The model was never wrong in principle; it was resting on a field the attacker controls.
+
+**Independence is still not the default, but the old reason is gone.** It is no longer exploitable — it is simply less accurate than `dominance` (93.1% vs 97.2%) once both are given unforgeable identity. That is a weaker and more honest objection than the one it replaces.
+
+**Verification does not fix everything, and the remainder is a different bug.** `spoof_now` at sizes 2 and 5 stays red. Stripping the forged reputation is necessary but not sufficient: `dominance` compares only the top two claims, so once the clones are demoted the margin over the real update is still too thin to clear `confidenceThreshold`, and PAL abstains rather than answering. That is the corroboration inversion, not a provenance failure. **The two weaknesses are separable, and only one of them is fixed here.**
+
+**Signing prevents impersonation, not lying.** An attacker who controls a real source can still sign false claims under their own name — perfectly valid tags, honestly attributed. That is exactly the `plain` swarm mode, which reranking already handles because the source carries low reliability. Provenance closes the gap between `plain` and `spoof_*`; it does not make a source trustworthy.
+
+### Modelling caveat
+
+The tags are HMACs, so verification uses the same secret that signed. Real provenance would be asymmetric — signers hold private keys, verifiers hold public ones. HMAC is used because it is deterministic and derivable from the corpus seed, which keeps the corpus reproducible; Node's ed25519 key generation cannot be seeded without hand-rolling the DER encoding. The property under test is identical either way: forging a tag for a source you do not control is infeasible. Nothing in the benchmark depends on the asymmetry.
+
 ## Limitations
 
-- **PAL has a known, reproducible weakness: small spoofed floods dated at or before `nowTs` jam it into abstaining** (see the swarm section). This is deliberately left failing rather than tuned away — `swarmSignaturePenalty` could be raised until the numbers go green, but that would be fitting the constant to the test rather than fixing the mechanism. A real defence needs to key on the *shape* of a coordinated flood (a burst of near-identical claims from one source in a narrow window) or on corroboration across genuinely independent sources.
-- **PAL is least confident when its top two sources agree**, and the obvious fix makes things worse. See "Confidence models" above: the inversion is real, but correcting it by summing support across sources opens a Sybil hole that costs more than the inversion does. This remains unfixed on purpose — the next attempt needs a notion of independence that an attacker cannot forge.
+- **PAL has a known, reproducible weakness: small spoofed floods dated at or before `nowTs` jam it into abstaining** (see the swarm section). Enabling `verifyProvenance` fixes this for `spoof_past` entirely and for `spoof_now` above size 5; what remains is the confidence inversion below, not the forgery. In the default (unsigned) configuration it is deliberately left failing rather than tuned away — `swarmSignaturePenalty` could be raised until the numbers go green, but that would be fitting the constant to the test rather than fixing the mechanism. A real defence needs to key on the *shape* of a coordinated flood (a burst of near-identical claims from one source in a narrow window) or on corroboration across genuinely independent sources.
+- **PAL is least confident when its top two sources agree.** The inversion is real and remains unfixed. The obvious correction — summing support across sources — used to open a Sybil hole; with `verifyProvenance` on it no longer does, but it is still less accurate than the model it would replace, so the inversion stands as the main open weakness. It is now the *only* thing keeping `spoof_now` red at small flood sizes.
 - **The CY-lite torus projection is currently inert.** `ledger.query` filters candidates to a single `(domain, subject)` pair before scoring, and `theta` is a pure function of `(domain, subject)` — so every candidate receives a torus weight of exactly 1.0 and it cancels out of every comparison. It is listed as mechanism 6 above but contributes nothing to any decision today. It needs either a purpose (letting related subjects inform one another) or removal.
 - Retrieval is bag-of-words (Jaccard overlap). A real deployment would use dense embeddings, which interact differently with scope boundaries.
 - Source reliability is hand-assigned in the corpus generator. In production it would be learned or externally provided.

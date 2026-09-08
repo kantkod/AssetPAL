@@ -113,9 +113,10 @@ const corpusHashes = () => ({
 });
 
 // Content of the seed-42 corpus every published number in the README was
-// measured against. Node 22.
+// measured against. Node 22. Changed once since: claims now carry provenance
+// tags (`sig`), which altered the corpus bytes without altering any result.
 const PINNED = {
-  corpus: "6f38be9376f7891bbd29ac786c7e8875fc0b88369936488f530f50ca51cad4fe",
+  corpus: "cdb320438db32f2151a93d3ab0d4f85cd9b0dd3cb94da0c6c5fe65a6405abbfd",
   queries: "11429ccba5ab8135f2477f9c1645b47c167a930f291f662b7dcb2be2b30b4483"
 };
 

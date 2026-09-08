@@ -10,7 +10,7 @@ Zero runtime dependencies. Node 22. Everything is seeded and reproducible.
 
 ```bash
 npm run gen     # generate the synthetic corpus -> results/corpus/
-npm test        # 41 tests; self-bootstraps the corpus if missing
+npm test        # 54 tests; self-bootstraps the corpus if missing
 npm run bench   # full run -> runs/<runId>/ + results.json
 npm run build   # static site -> public/ (this is the Netlify build)
 npm run inspect # local-only per-query inspector on :3000
@@ -30,10 +30,12 @@ never commit them.
 | `experiment_core.js` | The three experiment runners. Pure — no `fs`, so esbuild can bundle it |
 | `metrics.js` | Per-query scoring into a summary |
 | `scoring.js` | **Single source of truth** for the overall score |
+| `provenance.js` | Signed claim tags — identity a source can prove, not one it asserts |
 | `bench.js` / `index.js` / `build.js` / `netlify/functions/run-experiment.js` | The four surfaces that report a score |
 | `test/benchmark.test.js` | End-to-end guards on the numbers the README publishes |
 | `test/scoring.test.js` / `test/confidence.test.js` | Scoring rules; the dominance vs independence models |
 | `test/invariants.test.js` | Structural guards: one scoring rule, torus inertness, corpus hash, the attack generator's contract |
+| `test/provenance.test.js` | Unforgeable identity: the primitive, what it fixes, and what it deliberately does not |
 
 ## Invariants — do not break these
 
@@ -57,18 +59,30 @@ The benchmark used to score PAL at 100% on everything, which meant it had
 stopped measuring anything. Several cells are now red **on purpose**, and the
 tests pin them so a fix shows up as a deliberate test change.
 
-- **`spoof_now` / `spoof_past` swarm at sizes 2–10.** PAL drops to 0%. These
-  modes date the forged clones at or before `nowTs`, so `futureTimestampPenalty`
-  never fires and only `swarmSignaturePenalty` is left — too weak at small flood
-  sizes. **Raising `swarmSignaturePenalty` would turn these green and would be
-  fitting a constant to the test.** A real fix keys on the *shape* of a
-  coordinated flood, or on source independence.
+- **`spoof_now` / `spoof_past` swarm at sizes 2–10, in the default (unsigned)
+  configuration.** PAL drops to 0%. These modes date the forged clones at or
+  before `nowTs`, so `futureTimestampPenalty` never fires and only
+  `swarmSignaturePenalty` is left — too weak at small flood sizes. **Raising
+  `swarmSignaturePenalty` would turn these green and would be fitting a constant
+  to the test.**
+
+  A real fix now exists and is measured: `verifyProvenance: true` recovers
+  `spoof_past` entirely and `spoof_now` above size 5, by stripping forged
+  identity rather than by tuning a penalty. It is **off by default** so the
+  default configuration keeps measuring the unsigned threat model, which is what
+  most real corpora are. `spoof_now` at sizes 2 and 5 stays red even with
+  verification on — that residue is the corroboration inversion below, not the
+  forgery.
 
 - **The `independence` confidence model.** Implemented, flag-gated, and *not*
-  default. It correctly fixes a real flaw (see below) but is worse where it
-  matters: it lets an attacker manufacture an apparent second witness, taking
-  PAL from 0 false assertions to 48. Do not promote it to default without
-  solving forgeable identity first.
+  default. It fixes the corroboration inversion but, on an unsigned corpus, lets
+  an attacker manufacture an apparent second witness — 0 false assertions to 48.
+
+  **Forgeable identity was the entire cause, and that is now fixed.** With
+  `verifyProvenance: true` the same model asserts the false claim **zero** times.
+  The reason it is still not default has therefore changed: it is no longer
+  exploitable, merely less accurate than `dominance` (93.1% vs 97.2%). Do not
+  re-cite the Sybil argument against it — that objection has been retired.
 
 If a change makes these green, verify *why* before believing it.
 
@@ -106,29 +120,46 @@ If a change makes these green, verify *why* before believing it.
 
 ## Open threads, in the order I would take them
 
-1. **A notion of source independence an attacker cannot forge.** This is the
-   blocker for everything else. `source` is a self-declared string, and spoofing
-   it is exactly the attack. Options: signed provenance, channel distinctness
-   (independence from *how* a claim arrived), or a learned trust graph where
-   historically-correlated sources count as one witness. The trust graph is the
-   most tractable here because the corpus can generate correlated sources
-   synthetically and you can measure recovery.
+**(1) is done.** `provenance.js` gives claims an identity an attacker cannot
+forge, and it is measured in `test/provenance.test.js` and the README. That
+unblocks the rest of this list — but note it moved the bottleneck rather than
+removing it: the remaining swarm failures are now a *confidence* problem, not an
+identity one.
 
-2. **A swarm defence built on (1)** — burst detection, or corroboration weighted
-   by established independence. Then let `spoof_now` / `spoof_past` go green
-   honestly.
+1. **The corroboration inversion — now the top blocker.** `dominance =
+   top/(top+second)` still scores agreement and disagreement with the same
+   number, and it is the only thing keeping `spoof_now` red at sizes 2 and 5
+   *with verification on*. The `independence` model fixes the inversion and is
+   no longer Sybil-exploitable, but scores lower overall (93.1% vs 97.2%), so it
+   is not a drop-in. What is wanted is a confidence function that rewards
+   agreement between *verified distinct* identities without losing the accuracy
+   `dominance` has. This is the single highest-value change left.
 
-3. **The torus decision** — purpose or removal.
+2. **A swarm defence for the residue.** Sizes 2 and 5 of `spoof_now` are the
+   whole remaining gap. Burst detection (many near-identical claims from one
+   identity in a narrow window) is the obvious candidate and is now cheap to
+   build, because unverified claims already collapse to a single identity.
 
-4. **`Li`, the private ledger.** The README's original "next step". Worth noting
-   it is *also* an independence mechanism: an agent's own accumulated prior is
-   one witness that cannot be forged by flooding the shared pool. That makes it a
-   natural fit with (1) rather than a separate feature.
+3. **Decide what "unverified" should cost.** `unverifiedReliability` (0.3) is a
+   constant, and constants are how this benchmark gets fooled. Better would be
+   to derive the penalty from something observable — how much of the retrieved
+   set is unverified, say — rather than fixing it by hand.
 
-5. **Sea of Ledgers / multi-PAL consensus.** Owner's longer-term idea. Blocked on
-   (1) for a concrete reason: consensus by *summing agreement* is precisely the
-   architecture the `independence` experiment showed to be Sybil-exploitable. If
-   N ledgers agreeing raises confidence, the attack reduces to spawning ledgers.
+4. **The torus decision** — purpose or removal. Unchanged, still inert.
+
+5. **`Li`, the private ledger.** The README's original "next step", and it is
+   *also* an independence mechanism: an agent's own accumulated prior is one
+   witness that cannot be forged by flooding the shared pool. It now composes
+   naturally with provenance — the private ledger supplies a second verified
+   identity rather than a second self-declared one.
+
+6. **Sea of Ledgers / multi-PAL consensus.** Owner's longer-term idea. **The
+   stated blocker is now cleared**: consensus by summing agreement was rejected
+   because it is Sybil-exploitable, and the provenance result shows that hole
+   closes once identity is verified. The remaining question is not whether
+   summing agreement is safe, but whether it is *accurate* — the independence
+   experiment says a naive sum costs about four points of overall score even when
+   it cannot be exploited. Anyone starting this should measure that first.
 
 ## Conventions
 

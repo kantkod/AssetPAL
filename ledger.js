@@ -1,4 +1,5 @@
 import { torusWeight, projectToTorus } from "./torus.js";
+import { effectiveSource, effectiveReliability } from "./provenance.js";
 
 export class TruthLedger {
   constructor(cfg) {
@@ -16,10 +17,15 @@ export class TruthLedger {
     const qTheta = projectToTorus(domain, subject);
     const candidates = this.claims.filter(c => c.domain === domain && c.subject === subject);
 
+    // Identity is what a claim can prove, not what it asserts. With
+    // verifyProvenance off this is just `c.source` and nothing below changes.
+    const identity = new Map();
+    for (const c of candidates) identity.set(c, effectiveSource(c, cfg));
+
     const sourceUniqueSigs = new Map();
     const signatureCounts = new Map();
     for (const c of candidates) {
-      const sourceKey = c.source ?? "unknown";
+      const sourceKey = identity.get(c);
       const sigKey = `${sourceKey}|${c.timestamp}|${String(c.value)}`;
       signatureCounts.set(sigKey, (signatureCounts.get(sigKey) || 0) + 1);
       if (!sourceUniqueSigs.has(sourceKey)) sourceUniqueSigs.set(sourceKey, new Set());
@@ -29,7 +35,7 @@ export class TruthLedger {
     const scored = candidates.map(c => {
       let w = c.weight;
 
-      w *= Math.pow((c.reliability ?? 0.5), cfg.reliabilityWeight);
+      w *= Math.pow(effectiveReliability(c, cfg), cfg.reliabilityWeight);
 
       const dt = nowTs - c.timestamp;
       const timeBoost = 1 / (1 + Math.max(0, dt));
@@ -48,16 +54,16 @@ export class TruthLedger {
       w *= scopeWeight;
 
       const maxSameSourceInfluence = cfg.maxSameSourceInfluence ?? 3;
-      const sourceCount = sourceUniqueSigs.get(c.source ?? "unknown")?.size || 1;
+      const sourceCount = sourceUniqueSigs.get(identity.get(c))?.size || 1;
       const sourcePenalty = Math.min(1, maxSameSourceInfluence / sourceCount);
       w *= sourcePenalty;
 
-      const sigCount = signatureCounts.get(`${c.source ?? "unknown"}|${c.timestamp}|${String(c.value)}`) || 1;
+      const sigCount = signatureCounts.get(`${identity.get(c)}|${c.timestamp}|${String(c.value)}`) || 1;
       const swarmSignaturePenalty = cfg.swarmSignaturePenalty ?? 0.2;
       const signaturePenalty = 1 / (1 + Math.max(0, sigCount - 1) * swarmSignaturePenalty);
       w *= signaturePenalty;
 
-      return { ...c, score: w };
+      return { ...c, score: w, identity: identity.get(c), effRel: effectiveReliability(c, cfg) };
     });
 
     scored.sort((a, b) => b.score - a.score);
@@ -132,7 +138,7 @@ function decideByIndependence(cfg, scored) {
     // the same timestamp is one piece of evidence however many copies exist.
     const bySource = new Map();
     for (const c of g.claims) {
-      const src = c.source ?? "unknown";
+      const src = c.identity ?? c.source ?? "unknown";
       if (!bySource.has(src)) bySource.set(src, new Map());
       const sigs = bySource.get(src);
       const sig = `${c.timestamp}|${String(c.value)}`;
@@ -179,7 +185,7 @@ function decideByIndependence(cfg, scored) {
 }
 
 function singleConfidence(claim) {
-  return clamp01(0.55 + 0.45 * (claim.reliability ?? 0.5));
+  return clamp01(0.55 + 0.45 * (claim.effRel ?? claim.reliability ?? 0.5));
 }
 
 export function scopeMatchWeight(claimScope, queryScope, cfg) {
