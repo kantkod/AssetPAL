@@ -6,6 +6,46 @@ conflicting sources, scoped updates, and adversarial document floods.
 
 Zero runtime dependencies. Node 22. Everything is seeded and reproducible.
 
+---
+
+## STOP — required before writing another simulation
+
+Owner's standing instruction. This applies to **every session**, before any new
+experiment, mechanism or benchmark run. Writing code first and finding the
+question afterwards is how this project produces results that are true but
+uninteresting. Answer all three **in writing, in the session, before coding** —
+each one twice: one plain sentence a non-specialist could follow, then the
+detail.
+
+**1. What do existing approaches already explain, and what do they not?**
+Say what is already known and already solved, by name. If the mechanism you are
+about to build is standard practice somewhere else, say so plainly — that is not
+a reason to skip it, but claiming novelty for it is dishonest. The interesting
+contribution is almost never the mechanism; it is the part existing work leaves
+unexplained.
+
+**2. What does our hypothesis predict beyond those explanations, and what is
+actually novel?**
+State the prediction *before* running anything. A finding narrated after the
+fact is exploration, not confirmation — and must be reported as exploration. If
+you cannot say in advance what you expect, you do not yet have a hypothesis, you
+have a plan to go looking.
+
+**3. What result would distinguish those predictions, and what would count as
+failure?**
+Name the number, the cell, or the comparison that would separate them, and name
+the outcome that would mean the idea is wrong. An experiment that cannot fail
+proves nothing. Watch especially for results that are **true by construction**:
+in a synthetic benchmark where we also write the attack, a defence keyed on
+exactly what the attack mutates will always succeed, and that is a tautology
+dressed as a finding. Say so when it applies.
+
+Record the answers in the commit message and, if the result is worth keeping, in
+the README. If a result turns out to be partly tautological, that belongs in the
+write-up too — this repo's value is that its negative and qualified results are
+stated as clearly as its wins.
+
+
 ## Commands
 
 ```bash
@@ -163,6 +203,8 @@ identity one.
 
 ## Conventions
 
+- **Answer the three questions at the top of this file before building
+  anything.** They are a gate, not a suggestion.
 - Run `npm test` before pushing. Prefer adding a pinned test over a prose note
   when you discover a behaviour worth keeping.
 - Changing the corpus (the seed, the generator, a document body) moves every
