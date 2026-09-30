@@ -1,8 +1,15 @@
 import { torusWeight, projectToTorus } from "./torus.js";
-import { effectiveSource, effectiveReliability } from "./provenance.js";
+import { effectiveSource, effectiveReliability, verifyClaim } from "./provenance.js";
 
 export class TruthLedger {
   constructor(cfg) {
+    const provenancePolicy = cfg.provenancePolicy ?? "penalize";
+    if (!["penalize", "require_verified"].includes(provenancePolicy)) {
+      throw new Error(`Unknown provenancePolicy: ${provenancePolicy}`);
+    }
+    if (provenancePolicy === "require_verified" && cfg.verifyProvenance !== true) {
+      throw new Error("provenancePolicy=require_verified requires verifyProvenance=true");
+    }
     this.cfg = cfg;
     this.claims = [];
   }
@@ -15,7 +22,13 @@ export class TruthLedger {
   query(domain, subject, nowTs, queryScope = null) {
     const cfg = this.cfg;
     const qTheta = projectToTorus(domain, subject);
-    const candidates = this.claims.filter(c => c.domain === domain && c.subject === subject);
+    const candidates = this.claims.filter(c =>
+      c.domain === domain && c.subject === subject &&
+      // An eligibility policy, not another weight that freshness can beat.
+      // All-ineligible contexts become NO_EVIDENCE. Signed lies remain eligible.
+      (cfg.provenancePolicy !== "require_verified" ||
+        verifyClaim(c, cfg.provenanceSeed ?? cfg.seed))
+    );
 
     // Identity is what a claim can prove, not what it asserts. With
     // verifyProvenance off this is just `c.source` and nothing below changes.
@@ -33,9 +46,14 @@ export class TruthLedger {
     }
 
     const scored = candidates.map(c => {
-      let w = c.weight;
+      const effRel = effectiveReliability(c, cfg);
+      const valueMax = cfg.confidenceModel === "value_max";
+      // Legacy modes keep their historical scores. In value_max both factors
+      // use effective reliability: a capped forgery must not retain its claimed
+      // reputation through the base weight stored by upsertClaim.
+      let w = valueMax ? Math.max(0.01, Math.min(1.0, effRel)) : c.weight;
 
-      w *= Math.pow(effectiveReliability(c, cfg), cfg.reliabilityWeight);
+      w *= Math.pow(effRel, cfg.reliabilityWeight);
 
       const dt = nowTs - c.timestamp;
       const timeBoost = 1 / (1 + Math.max(0, dt));
@@ -56,14 +74,16 @@ export class TruthLedger {
       const maxSameSourceInfluence = cfg.maxSameSourceInfluence ?? 3;
       const sourceCount = sourceUniqueSigs.get(identity.get(c))?.size || 1;
       const sourcePenalty = Math.min(1, maxSameSourceInfluence / sourceCount);
-      w *= sourcePenalty;
+      // Max-per-value aggregation is already multiplicity-invariant. Applying
+      // count penalties would let copies dilute genuine support instead.
+      if (!valueMax) w *= sourcePenalty;
 
       const sigCount = signatureCounts.get(`${identity.get(c)}|${c.timestamp}|${String(c.value)}`) || 1;
       const swarmSignaturePenalty = cfg.swarmSignaturePenalty ?? 0.2;
       const signaturePenalty = 1 / (1 + Math.max(0, sigCount - 1) * swarmSignaturePenalty);
-      w *= signaturePenalty;
+      if (!valueMax) w *= signaturePenalty;
 
-      return { ...c, score: w, identity: identity.get(c), effRel: effectiveReliability(c, cfg) };
+      return { ...c, score: w, identity: identity.get(c), effRel };
     });
 
     scored.sort((a, b) => b.score - a.score);
@@ -75,10 +95,31 @@ export class TruthLedger {
     const scored = this.query(domain, subject, nowTs, queryScope);
     if (scored.length === 0) return { status: "NO_EVIDENCE", confidence: 0, picks: [] };
 
+    if (cfg.confidenceModel === "value_max") return decideByValueMax(cfg, scored);
     return (cfg.confidenceModel ?? "dominance") === "dominance"
       ? decideByDominance(cfg, scored)
       : decideByIndependence(cfg, scored);
   }
+}
+
+// Compare distinct values using only their strongest eligible claim. Agreement
+// is never its own rival; copies cannot add or subtract support. This deliberately
+// makes no independence inference from source names and does not turn verified
+// identity into a guarantee of truth. Confidence is a heuristic, not calibration.
+function decideByValueMax(cfg, scored) {
+  const strongest = new Map();
+  for (const c of scored) {
+    const key = String(c.value);
+    if (!strongest.has(key)) strongest.set(key, c); // scored is descending
+  }
+  const [top, rival] = [...strongest.values()];
+  if (!rival) return { status: "SINGLE", confidence: singleConfidence(top), picks: [top] };
+
+  const confidence = clamp01(top.score / (top.score + rival.score + 1e-9));
+  if (confidence < (1 - cfg.contradictionThreshold)) {
+    return { status: "CONFLICT", confidence, picks: [top, rival] };
+  }
+  return { status: "RESOLVED", confidence, picks: [top] };
 }
 
 // Legacy model: compare the top two individual claims.
