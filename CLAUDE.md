@@ -6,6 +6,26 @@ conflicting sources, scoped updates, and adversarial document floods.
 
 Zero runtime dependencies. Node 22. Everything is seeded and reproducible.
 
+## 2026-09-30 repair status — read before reusing earlier claims
+
+The zero-false-assertion statements later in these notes describe only the
+original corpus. The exposed fixed-budget stress test refutes general versions
+of those claims, even with provenance penalties enabled. See
+`experiments/fixed-budget/REPORT.md` and `REPAIR_PROTOCOL.md`.
+
+- `provenancePolicy: "require_verified"` with `verifyProvenance: true` is now an
+  opt-in eligibility gate. It excludes unverified evidence before scoring and
+  returns no answer if none remains. It cannot establish a signer's truthfulness.
+- `confidenceModel: "value_max"` is an experimental confidence repair: compare
+  distinct values by their strongest eligible claim, invariant to copies. It
+  fixes the corroboration inversion, but exposes many signed-source false
+  assertions formerly suppressed by dominance ties. Do not make it default on
+  the strength of this corpus or describe it as universally safer.
+- Defaults and all legacy negative-result guards remain unchanged. The stress
+  corpus and captured failures are development data now, not a fresh holdout.
+- `npm run bench:repair` regenerates the exact exposed 7,440 cases, checks the
+  frozen corpus hash and baseline counts, and records summaries and traces.
+
 ---
 
 ## STOP — required before writing another simulation

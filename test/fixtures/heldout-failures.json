@@ -1,0 +1,1854 @@
+{
+  "corroboration_abstention": {
+    "trace": {
+      "world": 0,
+      "query": "w0_corroborated_0",
+      "family": "corroborated",
+      "size": 0,
+      "budget": "fixed6",
+      "method": "PAL",
+      "expected": "limit_35",
+      "ordinary": true,
+      "correct": false,
+      "answered": false,
+      "wrongAssertion": false,
+      "supportRetained": true,
+      "retrieved": [
+        "w0_d1",
+        "w0_d13",
+        "w0_d0",
+        "w0_d5",
+        "w0_d10",
+        "w0_d3"
+      ],
+      "decision": {
+        "status": "UNCERTAIN",
+        "value": null,
+        "confidence": 0.4999999935302451,
+        "evidence": [
+          "w0_d1"
+        ],
+        "options": [
+          {
+            "value": "limit_35",
+            "docId": "w0_d1",
+            "score": 0.03864133964306753
+          }
+        ]
+      }
+    },
+    "case": {
+      "world": 0,
+      "family": "corroborated",
+      "size": 0,
+      "q": {
+        "id": "w0_corroborated_0",
+        "domain": "LOGISTICS",
+        "subject": "storage_limit_000",
+        "question": "What is the current storage_limit_000 policy for WEST PLUS Y?",
+        "scope": {
+          "region": "WEST",
+          "tier": "PLUS",
+          "product": "Y"
+        },
+        "nowTs": 223,
+        "expected": "limit_35"
+      },
+      "docs": [
+        {
+          "id": "w0_d6",
+          "domain": "LOGISTICS",
+          "text": "LOGISTICS office records maintenance reference 3 historical operational guidance",
+          "source": "Archive_0_3",
+          "timestamp": 68,
+          "reliability": 0.5,
+          "claims": [
+            {
+              "domain": "LOGISTICS",
+              "subject": "unrelated_3",
+              "value": "reference_3",
+              "timestamp": 68,
+              "source": "Archive_0_3",
+              "reliability": 0.5,
+              "scope": {
+                "region": "*",
+                "tier": "*",
+                "product": "*"
+              },
+              "docId": "w0_d6",
+              "theta": [
+                1.4660765716752369,
+                5.689773361501514
+              ],
+              "sig": "0df10b64f0f4680fe4c9be97525b8f64"
+            }
+          ]
+        },
+        {
+          "id": "w0_d10",
+          "domain": "LOGISTICS",
+          "text": "LOGISTICS office records maintenance reference 7 historical operational guidance",
+          "source": "Archive_0_7",
+          "timestamp": 72,
+          "reliability": 0.5,
+          "claims": [
+            {
+              "domain": "LOGISTICS",
+              "subject": "unrelated_7",
+              "value": "reference_7",
+              "timestamp": 72,
+              "source": "Archive_0_7",
+              "reliability": 0.5,
+              "scope": {
+                "region": "*",
+                "tier": "*",
+                "product": "*"
+              },
+              "docId": "w0_d10",
+              "theta": [
+                1.53588974175501,
+                0.4886921905584123
+              ],
+              "sig": "8aaf51f303aca240549aeecc77ff9b01"
+            }
+          ]
+        },
+        {
+          "id": "w0_d0",
+          "domain": "LOGISTICS",
+          "text": "LOGISTICS storage_limit_000 policy states limit_27. Applies to * * *. Current operational guidance and policy register.",
+          "source": "Handbook_0",
+          "timestamp": 65,
+          "reliability": 0.8014722540974617,
+          "claims": [
+            {
+              "domain": "LOGISTICS",
+              "subject": "storage_limit_000",
+              "value": "limit_27",
+              "timestamp": 65,
+              "source": "Handbook_0",
+              "reliability": 0.8014722540974617,
+              "scope": {
+                "region": "*",
+                "tier": "*",
+                "product": "*"
+              },
+              "docId": "w0_d0",
+              "theta": [
+                1.710422666954443,
+                0.17453292519943295
+              ],
+              "sig": "91bf09e3c49d98797357ffd671660a86"
+            }
+          ]
+        },
+        {
+          "id": "w0_d1",
+          "domain": "LOGISTICS",
+          "text": "For LOGISTICS, the applicable storage_limit_000 rule is limit_35. Coverage WEST PLUS Y. Approved operational instructions.",
+          "source": "Authority_0",
+          "timestamp": 213,
+          "reliability": 0.8286319952039048,
+          "claims": [
+            {
+              "domain": "LOGISTICS",
+              "subject": "storage_limit_000",
+              "value": "limit_35",
+              "timestamp": 213,
+              "source": "Authority_0",
+              "reliability": 0.8286319952039048,
+              "scope": {
+                "region": "WEST",
+                "tier": "PLUS",
+                "product": "Y"
+              },
+              "docId": "w0_d1",
+              "theta": [
+                1.710422666954443,
+                0.17453292519943295
+              ],
+              "sig": "15290115d66dc7ac573c3849d2c3f624"
+            }
+          ]
+        },
+        {
+          "id": "w0_d4",
+          "domain": "LOGISTICS",
+          "text": "LOGISTICS office records maintenance reference 1 historical operational guidance",
+          "source": "Archive_0_1",
+          "timestamp": 66,
+          "reliability": 0.5,
+          "claims": [
+            {
+              "domain": "LOGISTICS",
+              "subject": "unrelated_1",
+              "value": "reference_1",
+              "timestamp": 66,
+              "source": "Archive_0_1",
+              "reliability": 0.5,
+              "scope": {
+                "region": "*",
+                "tier": "*",
+                "product": "*"
+              },
+              "docId": "w0_d4",
+              "theta": [
+                1.43116998663535,
+                5.1487212933832724
+              ],
+              "sig": "01f640618465b81df179129767672fa3"
+            }
+          ]
+        },
+        {
+          "id": "w0_d5",
+          "domain": "LOGISTICS",
+          "text": "LOGISTICS office records maintenance reference 2 historical operational guidance",
+          "source": "Archive_0_2",
+          "timestamp": 67,
+          "reliability": 0.5,
+          "claims": [
+            {
+              "domain": "LOGISTICS",
+              "subject": "unrelated_2",
+              "value": "reference_2",
+              "timestamp": 67,
+              "source": "Archive_0_2",
+              "reliability": 0.5,
+              "scope": {
+                "region": "*",
+                "tier": "*",
+                "product": "*"
+              },
+              "docId": "w0_d5",
+              "theta": [
+                4.590215932745087,
+                2.2689280275926285
+              ],
+              "sig": "417cdfa8c329a79d7fb0b3285cb4f9ff"
+            }
+          ]
+        },
+        {
+          "id": "w0_d3",
+          "domain": "LOGISTICS",
+          "text": "LOGISTICS office records maintenance reference 0 historical operational guidance",
+          "source": "Archive_0_0",
+          "timestamp": 65,
+          "reliability": 0.5,
+          "claims": [
+            {
+              "domain": "LOGISTICS",
+              "subject": "unrelated_0",
+              "value": "reference_0",
+              "timestamp": 65,
+              "source": "Archive_0_0",
+              "reliability": 0.5,
+              "scope": {
+                "region": "*",
+                "tier": "*",
+                "product": "*"
+              },
+              "docId": "w0_d3",
+              "theta": [
+                4.5553093477052,
+                1.7278759594743864
+              ],
+              "sig": "99ffcfd02c7a79737abc3523d79b7d9b"
+            }
+          ]
+        },
+        {
+          "id": "w0_d8",
+          "domain": "LOGISTICS",
+          "text": "LOGISTICS office records maintenance reference 5 historical operational guidance",
+          "source": "Archive_0_5",
+          "timestamp": 70,
+          "reliability": 0.5,
+          "claims": [
+            {
+              "domain": "LOGISTICS",
+              "subject": "unrelated_5",
+              "value": "reference_5",
+              "timestamp": 70,
+              "source": "Archive_0_5",
+              "reliability": 0.5,
+              "scope": {
+                "region": "*",
+                "tier": "*",
+                "product": "*"
+              },
+              "docId": "w0_d8",
+              "theta": [
+                1.5009831567151233,
+                6.230825429619756
+              ],
+              "sig": "6effd42ae3b1b83b149bad782e4dcef1"
+            }
+          ]
+        },
+        {
+          "id": "w0_d13",
+          "domain": "LOGISTICS",
+          "text": "storage_limit_000 limit limit_35 for product Y, tier PLUS, region WEST. LOGISTICS current policy reference.",
+          "source": "Auditor_0",
+          "timestamp": 213,
+          "reliability": 0.8286319952039048,
+          "claims": [
+            {
+              "domain": "LOGISTICS",
+              "subject": "storage_limit_000",
+              "value": "limit_35",
+              "timestamp": 213,
+              "source": "Auditor_0",
+              "reliability": 0.8286319952039048,
+              "scope": {
+                "region": "WEST",
+                "tier": "PLUS",
+                "product": "Y"
+              },
+              "docId": "w0_d13",
+              "theta": [
+                1.710422666954443,
+                0.17453292519943295
+              ],
+              "sig": "b75575375bb0a72e7de3f1a2f9e6adb1"
+            }
+          ]
+        },
+        {
+          "id": "w0_d7",
+          "domain": "LOGISTICS",
+          "text": "LOGISTICS office records maintenance reference 4 historical operational guidance",
+          "source": "Archive_0_4",
+          "timestamp": 69,
+          "reliability": 0.5,
+          "claims": [
+            {
+              "domain": "LOGISTICS",
+              "subject": "unrelated_4",
+              "value": "reference_4",
+              "timestamp": 69,
+              "source": "Archive_0_4",
+              "reliability": 0.5,
+              "scope": {
+                "region": "*",
+                "tier": "*",
+                "product": "*"
+              },
+              "docId": "w0_d7",
+              "theta": [
+                4.625122517784973,
+                2.8099800957108703
+              ],
+              "sig": "26218dc113c3c6d7cda8a80526c12c25"
+            }
+          ]
+        },
+        {
+          "id": "w0_d9",
+          "domain": "LOGISTICS",
+          "text": "LOGISTICS office records maintenance reference 6 historical operational guidance",
+          "source": "Archive_0_6",
+          "timestamp": 71,
+          "reliability": 0.5,
+          "claims": [
+            {
+              "domain": "LOGISTICS",
+              "subject": "unrelated_6",
+              "value": "reference_6",
+              "timestamp": 71,
+              "source": "Archive_0_6",
+              "reliability": 0.5,
+              "scope": {
+                "region": "*",
+                "tier": "*",
+                "product": "*"
+              },
+              "docId": "w0_d9",
+              "theta": [
+                4.6600291028248595,
+                3.3510321638291125
+              ],
+              "sig": "92fdf7c2473d2581f5fbe47e75f8724b"
+            }
+          ]
+        }
+      ],
+      "support": [
+        "w0_d1",
+        "w0_d13"
+      ]
+    }
+  },
+  "verified_wrong_support_True": {
+    "trace": {
+      "world": 0,
+      "query": "w0_spoof_clones_1",
+      "family": "spoof_clones",
+      "size": 1,
+      "budget": "fixed6",
+      "method": "PAL_verified",
+      "expected": "limit_35",
+      "ordinary": true,
+      "correct": false,
+      "answered": true,
+      "wrongAssertion": true,
+      "supportRetained": true,
+      "retrieved": [
+        "w0_d35",
+        "w0_d1",
+        "w0_d2",
+        "w0_d0",
+        "w0_d9",
+        "w0_d8"
+      ],
+      "decision": {
+        "status": "ANSWER",
+        "value": "limit_115",
+        "confidence": 0.670429508347626,
+        "evidence": [
+          "w0_d35"
+        ]
+      }
+    },
+    "case": {
+      "world": 0,
+      "family": "spoof_clones",
+      "size": 1,
+      "q": {
+        "id": "w0_spoof_clones_1",
+        "domain": "LOGISTICS",
+        "subject": "storage_limit_000",
+        "question": "What is the current storage_limit_000 policy for WEST PLUS Y?",
+        "scope": {
+          "region": "WEST",
+          "tier": "PLUS",
+          "product": "Y"
+        },
+        "nowTs": 223,
+        "expected": "limit_35"
+      },
+      "docs": [
+        {
+          "id": "w0_d1",
+          "domain": "LOGISTICS",
+          "text": "For LOGISTICS, the applicable storage_limit_000 rule is limit_35. Coverage WEST PLUS Y. Approved operational instructions.",
+          "source": "Authority_0",
+          "timestamp": 213,
+          "reliability": 0.8286319952039048,
+          "claims": [
+            {
+              "domain": "LOGISTICS",
+              "subject": "storage_limit_000",
+              "value": "limit_35",
+              "timestamp": 213,
+              "source": "Authority_0",
+              "reliability": 0.8286319952039048,
+              "scope": {
+                "region": "WEST",
+                "tier": "PLUS",
+                "product": "Y"
+              },
+              "docId": "w0_d1",
+              "theta": [
+                1.710422666954443,
+                0.17453292519943295
+              ],
+              "sig": "15290115d66dc7ac573c3849d2c3f624"
+            }
+          ]
+        },
+        {
+          "id": "w0_d3",
+          "domain": "LOGISTICS",
+          "text": "LOGISTICS office records maintenance reference 0 historical operational guidance",
+          "source": "Archive_0_0",
+          "timestamp": 65,
+          "reliability": 0.5,
+          "claims": [
+            {
+              "domain": "LOGISTICS",
+              "subject": "unrelated_0",
+              "value": "reference_0",
+              "timestamp": 65,
+              "source": "Archive_0_0",
+              "reliability": 0.5,
+              "scope": {
+                "region": "*",
+                "tier": "*",
+                "product": "*"
+              },
+              "docId": "w0_d3",
+              "theta": [
+                4.5553093477052,
+                1.7278759594743864
+              ],
+              "sig": "99ffcfd02c7a79737abc3523d79b7d9b"
+            }
+          ]
+        },
+        {
+          "id": "w0_d5",
+          "domain": "LOGISTICS",
+          "text": "LOGISTICS office records maintenance reference 2 historical operational guidance",
+          "source": "Archive_0_2",
+          "timestamp": 67,
+          "reliability": 0.5,
+          "claims": [
+            {
+              "domain": "LOGISTICS",
+              "subject": "unrelated_2",
+              "value": "reference_2",
+              "timestamp": 67,
+              "source": "Archive_0_2",
+              "reliability": 0.5,
+              "scope": {
+                "region": "*",
+                "tier": "*",
+                "product": "*"
+              },
+              "docId": "w0_d5",
+              "theta": [
+                4.590215932745087,
+                2.2689280275926285
+              ],
+              "sig": "417cdfa8c329a79d7fb0b3285cb4f9ff"
+            }
+          ]
+        },
+        {
+          "id": "w0_d4",
+          "domain": "LOGISTICS",
+          "text": "LOGISTICS office records maintenance reference 1 historical operational guidance",
+          "source": "Archive_0_1",
+          "timestamp": 66,
+          "reliability": 0.5,
+          "claims": [
+            {
+              "domain": "LOGISTICS",
+              "subject": "unrelated_1",
+              "value": "reference_1",
+              "timestamp": 66,
+              "source": "Archive_0_1",
+              "reliability": 0.5,
+              "scope": {
+                "region": "*",
+                "tier": "*",
+                "product": "*"
+              },
+              "docId": "w0_d4",
+              "theta": [
+                1.43116998663535,
+                5.1487212933832724
+              ],
+              "sig": "01f640618465b81df179129767672fa3"
+            }
+          ]
+        },
+        {
+          "id": "w0_d2",
+          "domain": "LOGISTICS",
+          "text": "storage_limit_000 limit limit_70 for product Y, tier PLUS, region NORTH. LOGISTICS current policy reference.",
+          "source": "Branch_0",
+          "timestamp": 221,
+          "reliability": 0.9206414225976914,
+          "claims": [
+            {
+              "domain": "LOGISTICS",
+              "subject": "storage_limit_000",
+              "value": "limit_70",
+              "timestamp": 221,
+              "source": "Branch_0",
+              "reliability": 0.9206414225976914,
+              "scope": {
+                "region": "NORTH",
+                "tier": "PLUS",
+                "product": "Y"
+              },
+              "docId": "w0_d2",
+              "theta": [
+                1.710422666954443,
+                0.17453292519943295
+              ],
+              "sig": "0c73e55b1705ea1133c67bb8ba07cb31"
+            }
+          ]
+        },
+        {
+          "id": "w0_d7",
+          "domain": "LOGISTICS",
+          "text": "LOGISTICS office records maintenance reference 4 historical operational guidance",
+          "source": "Archive_0_4",
+          "timestamp": 69,
+          "reliability": 0.5,
+          "claims": [
+            {
+              "domain": "LOGISTICS",
+              "subject": "unrelated_4",
+              "value": "reference_4",
+              "timestamp": 69,
+              "source": "Archive_0_4",
+              "reliability": 0.5,
+              "scope": {
+                "region": "*",
+                "tier": "*",
+                "product": "*"
+              },
+              "docId": "w0_d7",
+              "theta": [
+                4.625122517784973,
+                2.8099800957108703
+              ],
+              "sig": "26218dc113c3c6d7cda8a80526c12c25"
+            }
+          ]
+        },
+        {
+          "id": "w0_d10",
+          "domain": "LOGISTICS",
+          "text": "LOGISTICS office records maintenance reference 7 historical operational guidance",
+          "source": "Archive_0_7",
+          "timestamp": 72,
+          "reliability": 0.5,
+          "claims": [
+            {
+              "domain": "LOGISTICS",
+              "subject": "unrelated_7",
+              "value": "reference_7",
+              "timestamp": 72,
+              "source": "Archive_0_7",
+              "reliability": 0.5,
+              "scope": {
+                "region": "*",
+                "tier": "*",
+                "product": "*"
+              },
+              "docId": "w0_d10",
+              "theta": [
+                1.53588974175501,
+                0.4886921905584123
+              ],
+              "sig": "8aaf51f303aca240549aeecc77ff9b01"
+            }
+          ]
+        },
+        {
+          "id": "w0_d8",
+          "domain": "LOGISTICS",
+          "text": "LOGISTICS office records maintenance reference 5 historical operational guidance",
+          "source": "Archive_0_5",
+          "timestamp": 70,
+          "reliability": 0.5,
+          "claims": [
+            {
+              "domain": "LOGISTICS",
+              "subject": "unrelated_5",
+              "value": "reference_5",
+              "timestamp": 70,
+              "source": "Archive_0_5",
+              "reliability": 0.5,
+              "scope": {
+                "region": "*",
+                "tier": "*",
+                "product": "*"
+              },
+              "docId": "w0_d8",
+              "theta": [
+                1.5009831567151233,
+                6.230825429619756
+              ],
+              "sig": "6effd42ae3b1b83b149bad782e4dcef1"
+            }
+          ]
+        },
+        {
+          "id": "w0_d6",
+          "domain": "LOGISTICS",
+          "text": "LOGISTICS office records maintenance reference 3 historical operational guidance",
+          "source": "Archive_0_3",
+          "timestamp": 68,
+          "reliability": 0.5,
+          "claims": [
+            {
+              "domain": "LOGISTICS",
+              "subject": "unrelated_3",
+              "value": "reference_3",
+              "timestamp": 68,
+              "source": "Archive_0_3",
+              "reliability": 0.5,
+              "scope": {
+                "region": "*",
+                "tier": "*",
+                "product": "*"
+              },
+              "docId": "w0_d6",
+              "theta": [
+                1.4660765716752369,
+                5.689773361501514
+              ],
+              "sig": "0df10b64f0f4680fe4c9be97525b8f64"
+            }
+          ]
+        },
+        {
+          "id": "w0_d9",
+          "domain": "LOGISTICS",
+          "text": "LOGISTICS office records maintenance reference 6 historical operational guidance",
+          "source": "Archive_0_6",
+          "timestamp": 71,
+          "reliability": 0.5,
+          "claims": [
+            {
+              "domain": "LOGISTICS",
+              "subject": "unrelated_6",
+              "value": "reference_6",
+              "timestamp": 71,
+              "source": "Archive_0_6",
+              "reliability": 0.5,
+              "scope": {
+                "region": "*",
+                "tier": "*",
+                "product": "*"
+              },
+              "docId": "w0_d9",
+              "theta": [
+                4.6600291028248595,
+                3.3510321638291125
+              ],
+              "sig": "92fdf7c2473d2581f5fbe47e75f8724b"
+            }
+          ]
+        },
+        {
+          "id": "w0_d0",
+          "domain": "LOGISTICS",
+          "text": "LOGISTICS storage_limit_000 policy states limit_27. Applies to * * *. Current operational guidance and policy register.",
+          "source": "Handbook_0",
+          "timestamp": 65,
+          "reliability": 0.8014722540974617,
+          "claims": [
+            {
+              "domain": "LOGISTICS",
+              "subject": "storage_limit_000",
+              "value": "limit_27",
+              "timestamp": 65,
+              "source": "Handbook_0",
+              "reliability": 0.8014722540974617,
+              "scope": {
+                "region": "*",
+                "tier": "*",
+                "product": "*"
+              },
+              "docId": "w0_d0",
+              "theta": [
+                1.710422666954443,
+                0.17453292519943295
+              ],
+              "sig": "91bf09e3c49d98797357ffd671660a86"
+            }
+          ]
+        },
+        {
+          "id": "w0_d35",
+          "domain": "LOGISTICS",
+          "text": "What is the current storage_limit_000 policy for WEST PLUS Y? LOGISTICS  confirmed bulletin limit_115",
+          "source": "Authority_0",
+          "timestamp": 221,
+          "reliability": 0.9792221707105636,
+          "claims": [
+            {
+              "domain": "LOGISTICS",
+              "subject": "storage_limit_000",
+              "value": "limit_115",
+              "timestamp": 221,
+              "source": "Authority_0",
+              "reliability": 0.9792221707105636,
+              "scope": {
+                "region": "WEST",
+                "tier": "PLUS",
+                "product": "Y"
+              },
+              "docId": "w0_d35",
+              "theta": [
+                1.710422666954443,
+                0.17453292519943295
+              ],
+              "sig": "00000000000000000000000000000000"
+            }
+          ]
+        }
+      ],
+      "support": [
+        "w0_d1"
+      ]
+    }
+  },
+  "default_wrong_with_truth": {
+    "trace": {
+      "world": 0,
+      "query": "w0_spoof_varied_1",
+      "family": "spoof_varied",
+      "size": 1,
+      "budget": "fixed6",
+      "method": "PAL",
+      "expected": "limit_35",
+      "ordinary": true,
+      "correct": false,
+      "answered": true,
+      "wrongAssertion": true,
+      "supportRetained": true,
+      "retrieved": [
+        "w0_d55",
+        "w0_d1",
+        "w0_d2",
+        "w0_d0",
+        "w0_d10",
+        "w0_d3"
+      ],
+      "decision": {
+        "status": "ANSWER",
+        "value": "limit_115",
+        "confidence": 0.8691090845575198,
+        "evidence": [
+          "w0_d55"
+        ]
+      }
+    },
+    "case": {
+      "world": 0,
+      "family": "spoof_varied",
+      "size": 1,
+      "q": {
+        "id": "w0_spoof_varied_1",
+        "domain": "LOGISTICS",
+        "subject": "storage_limit_000",
+        "question": "What is the current storage_limit_000 policy for WEST PLUS Y?",
+        "scope": {
+          "region": "WEST",
+          "tier": "PLUS",
+          "product": "Y"
+        },
+        "nowTs": 223,
+        "expected": "limit_35"
+      },
+      "docs": [
+        {
+          "id": "w0_d0",
+          "domain": "LOGISTICS",
+          "text": "LOGISTICS storage_limit_000 policy states limit_27. Applies to * * *. Current operational guidance and policy register.",
+          "source": "Handbook_0",
+          "timestamp": 65,
+          "reliability": 0.8014722540974617,
+          "claims": [
+            {
+              "domain": "LOGISTICS",
+              "subject": "storage_limit_000",
+              "value": "limit_27",
+              "timestamp": 65,
+              "source": "Handbook_0",
+              "reliability": 0.8014722540974617,
+              "scope": {
+                "region": "*",
+                "tier": "*",
+                "product": "*"
+              },
+              "docId": "w0_d0",
+              "theta": [
+                1.710422666954443,
+                0.17453292519943295
+              ],
+              "sig": "91bf09e3c49d98797357ffd671660a86"
+            }
+          ]
+        },
+        {
+          "id": "w0_d2",
+          "domain": "LOGISTICS",
+          "text": "storage_limit_000 limit limit_70 for product Y, tier PLUS, region NORTH. LOGISTICS current policy reference.",
+          "source": "Branch_0",
+          "timestamp": 221,
+          "reliability": 0.9206414225976914,
+          "claims": [
+            {
+              "domain": "LOGISTICS",
+              "subject": "storage_limit_000",
+              "value": "limit_70",
+              "timestamp": 221,
+              "source": "Branch_0",
+              "reliability": 0.9206414225976914,
+              "scope": {
+                "region": "NORTH",
+                "tier": "PLUS",
+                "product": "Y"
+              },
+              "docId": "w0_d2",
+              "theta": [
+                1.710422666954443,
+                0.17453292519943295
+              ],
+              "sig": "0c73e55b1705ea1133c67bb8ba07cb31"
+            }
+          ]
+        },
+        {
+          "id": "w0_d8",
+          "domain": "LOGISTICS",
+          "text": "LOGISTICS office records maintenance reference 5 historical operational guidance",
+          "source": "Archive_0_5",
+          "timestamp": 70,
+          "reliability": 0.5,
+          "claims": [
+            {
+              "domain": "LOGISTICS",
+              "subject": "unrelated_5",
+              "value": "reference_5",
+              "timestamp": 70,
+              "source": "Archive_0_5",
+              "reliability": 0.5,
+              "scope": {
+                "region": "*",
+                "tier": "*",
+                "product": "*"
+              },
+              "docId": "w0_d8",
+              "theta": [
+                1.5009831567151233,
+                6.230825429619756
+              ],
+              "sig": "6effd42ae3b1b83b149bad782e4dcef1"
+            }
+          ]
+        },
+        {
+          "id": "w0_d7",
+          "domain": "LOGISTICS",
+          "text": "LOGISTICS office records maintenance reference 4 historical operational guidance",
+          "source": "Archive_0_4",
+          "timestamp": 69,
+          "reliability": 0.5,
+          "claims": [
+            {
+              "domain": "LOGISTICS",
+              "subject": "unrelated_4",
+              "value": "reference_4",
+              "timestamp": 69,
+              "source": "Archive_0_4",
+              "reliability": 0.5,
+              "scope": {
+                "region": "*",
+                "tier": "*",
+                "product": "*"
+              },
+              "docId": "w0_d7",
+              "theta": [
+                4.625122517784973,
+                2.8099800957108703
+              ],
+              "sig": "26218dc113c3c6d7cda8a80526c12c25"
+            }
+          ]
+        },
+        {
+          "id": "w0_d5",
+          "domain": "LOGISTICS",
+          "text": "LOGISTICS office records maintenance reference 2 historical operational guidance",
+          "source": "Archive_0_2",
+          "timestamp": 67,
+          "reliability": 0.5,
+          "claims": [
+            {
+              "domain": "LOGISTICS",
+              "subject": "unrelated_2",
+              "value": "reference_2",
+              "timestamp": 67,
+              "source": "Archive_0_2",
+              "reliability": 0.5,
+              "scope": {
+                "region": "*",
+                "tier": "*",
+                "product": "*"
+              },
+              "docId": "w0_d5",
+              "theta": [
+                4.590215932745087,
+                2.2689280275926285
+              ],
+              "sig": "417cdfa8c329a79d7fb0b3285cb4f9ff"
+            }
+          ]
+        },
+        {
+          "id": "w0_d3",
+          "domain": "LOGISTICS",
+          "text": "LOGISTICS office records maintenance reference 0 historical operational guidance",
+          "source": "Archive_0_0",
+          "timestamp": 65,
+          "reliability": 0.5,
+          "claims": [
+            {
+              "domain": "LOGISTICS",
+              "subject": "unrelated_0",
+              "value": "reference_0",
+              "timestamp": 65,
+              "source": "Archive_0_0",
+              "reliability": 0.5,
+              "scope": {
+                "region": "*",
+                "tier": "*",
+                "product": "*"
+              },
+              "docId": "w0_d3",
+              "theta": [
+                4.5553093477052,
+                1.7278759594743864
+              ],
+              "sig": "99ffcfd02c7a79737abc3523d79b7d9b"
+            }
+          ]
+        },
+        {
+          "id": "w0_d6",
+          "domain": "LOGISTICS",
+          "text": "LOGISTICS office records maintenance reference 3 historical operational guidance",
+          "source": "Archive_0_3",
+          "timestamp": 68,
+          "reliability": 0.5,
+          "claims": [
+            {
+              "domain": "LOGISTICS",
+              "subject": "unrelated_3",
+              "value": "reference_3",
+              "timestamp": 68,
+              "source": "Archive_0_3",
+              "reliability": 0.5,
+              "scope": {
+                "region": "*",
+                "tier": "*",
+                "product": "*"
+              },
+              "docId": "w0_d6",
+              "theta": [
+                1.4660765716752369,
+                5.689773361501514
+              ],
+              "sig": "0df10b64f0f4680fe4c9be97525b8f64"
+            }
+          ]
+        },
+        {
+          "id": "w0_d1",
+          "domain": "LOGISTICS",
+          "text": "For LOGISTICS, the applicable storage_limit_000 rule is limit_35. Coverage WEST PLUS Y. Approved operational instructions.",
+          "source": "Authority_0",
+          "timestamp": 213,
+          "reliability": 0.8286319952039048,
+          "claims": [
+            {
+              "domain": "LOGISTICS",
+              "subject": "storage_limit_000",
+              "value": "limit_35",
+              "timestamp": 213,
+              "source": "Authority_0",
+              "reliability": 0.8286319952039048,
+              "scope": {
+                "region": "WEST",
+                "tier": "PLUS",
+                "product": "Y"
+              },
+              "docId": "w0_d1",
+              "theta": [
+                1.710422666954443,
+                0.17453292519943295
+              ],
+              "sig": "15290115d66dc7ac573c3849d2c3f624"
+            }
+          ]
+        },
+        {
+          "id": "w0_d4",
+          "domain": "LOGISTICS",
+          "text": "LOGISTICS office records maintenance reference 1 historical operational guidance",
+          "source": "Archive_0_1",
+          "timestamp": 66,
+          "reliability": 0.5,
+          "claims": [
+            {
+              "domain": "LOGISTICS",
+              "subject": "unrelated_1",
+              "value": "reference_1",
+              "timestamp": 66,
+              "source": "Archive_0_1",
+              "reliability": 0.5,
+              "scope": {
+                "region": "*",
+                "tier": "*",
+                "product": "*"
+              },
+              "docId": "w0_d4",
+              "theta": [
+                1.43116998663535,
+                5.1487212933832724
+              ],
+              "sig": "01f640618465b81df179129767672fa3"
+            }
+          ]
+        },
+        {
+          "id": "w0_d10",
+          "domain": "LOGISTICS",
+          "text": "LOGISTICS office records maintenance reference 7 historical operational guidance",
+          "source": "Archive_0_7",
+          "timestamp": 72,
+          "reliability": 0.5,
+          "claims": [
+            {
+              "domain": "LOGISTICS",
+              "subject": "unrelated_7",
+              "value": "reference_7",
+              "timestamp": 72,
+              "source": "Archive_0_7",
+              "reliability": 0.5,
+              "scope": {
+                "region": "*",
+                "tier": "*",
+                "product": "*"
+              },
+              "docId": "w0_d10",
+              "theta": [
+                1.53588974175501,
+                0.4886921905584123
+              ],
+              "sig": "8aaf51f303aca240549aeecc77ff9b01"
+            }
+          ]
+        },
+        {
+          "id": "w0_d9",
+          "domain": "LOGISTICS",
+          "text": "LOGISTICS office records maintenance reference 6 historical operational guidance",
+          "source": "Archive_0_6",
+          "timestamp": 71,
+          "reliability": 0.5,
+          "claims": [
+            {
+              "domain": "LOGISTICS",
+              "subject": "unrelated_6",
+              "value": "reference_6",
+              "timestamp": 71,
+              "source": "Archive_0_6",
+              "reliability": 0.5,
+              "scope": {
+                "region": "*",
+                "tier": "*",
+                "product": "*"
+              },
+              "docId": "w0_d9",
+              "theta": [
+                4.6600291028248595,
+                3.3510321638291125
+              ],
+              "sig": "92fdf7c2473d2581f5fbe47e75f8724b"
+            }
+          ]
+        },
+        {
+          "id": "w0_d55",
+          "domain": "LOGISTICS",
+          "text": "What is the current storage_limit_000 policy for WEST PLUS Y? LOGISTICS  confirmed bulletin limit_115",
+          "source": "Authority_0",
+          "timestamp": 221,
+          "reliability": 0.9792221707105636,
+          "claims": [
+            {
+              "domain": "LOGISTICS",
+              "subject": "storage_limit_000",
+              "value": "limit_115",
+              "timestamp": 221,
+              "source": "Authority_0",
+              "reliability": 0.9792221707105636,
+              "scope": {
+                "region": "WEST",
+                "tier": "PLUS",
+                "product": "Y"
+              },
+              "docId": "w0_d55",
+              "theta": [
+                1.710422666954443,
+                0.17453292519943295
+              ],
+              "sig": "00000000000000000000000000000000"
+            }
+          ]
+        }
+      ],
+      "support": [
+        "w0_d1"
+      ]
+    }
+  },
+  "verified_wrong_support_False": {
+    "trace": {
+      "world": 3,
+      "query": "w3_spoof_varied_10",
+      "family": "spoof_varied",
+      "size": 10,
+      "budget": "fixed6",
+      "method": "PAL_verified",
+      "expected": "limit_87",
+      "ordinary": true,
+      "correct": false,
+      "answered": true,
+      "wrongAssertion": true,
+      "supportRetained": false,
+      "retrieved": [
+        "w3_d57",
+        "w3_d58",
+        "w3_d64",
+        "w3_d59",
+        "w3_d62",
+        "w3_d61"
+      ],
+      "decision": {
+        "status": "ANSWER",
+        "value": "limit_45",
+        "confidence": 0.6889708337474271,
+        "evidence": [
+          "w3_d62"
+        ]
+      }
+    },
+    "case": {
+      "world": 3,
+      "family": "spoof_varied",
+      "size": 10,
+      "q": {
+        "id": "w3_spoof_varied_10",
+        "domain": "PROCUREMENT",
+        "subject": "storage_limit_003",
+        "question": "What is the current storage_limit_003 policy for NORTH PLUS Y?",
+        "scope": {
+          "region": "NORTH",
+          "tier": "PLUS",
+          "product": "Y"
+        },
+        "nowTs": 109,
+        "expected": "limit_87"
+      },
+      "docs": [
+        {
+          "id": "w3_d3",
+          "domain": "PROCUREMENT",
+          "text": "PROCUREMENT office records maintenance reference 0 historical operational guidance",
+          "source": "Archive_3_0",
+          "timestamp": 2,
+          "reliability": 0.5,
+          "claims": [
+            {
+              "domain": "PROCUREMENT",
+              "subject": "unrelated_0",
+              "value": "reference_0",
+              "timestamp": 2,
+              "source": "Archive_3_0",
+              "reliability": 0.5,
+              "scope": {
+                "region": "*",
+                "tier": "*",
+                "product": "*"
+              },
+              "docId": "w3_d3",
+              "theta": [
+                6.178465552059927,
+                0.8726646259971648
+              ],
+              "sig": "b59188e8634476444907d4810dea77df"
+            }
+          ]
+        },
+        {
+          "id": "w3_d7",
+          "domain": "PROCUREMENT",
+          "text": "PROCUREMENT office records maintenance reference 4 historical operational guidance",
+          "source": "Archive_3_4",
+          "timestamp": 6,
+          "reliability": 0.5,
+          "claims": [
+            {
+              "domain": "PROCUREMENT",
+              "subject": "unrelated_4",
+              "value": "reference_4",
+              "timestamp": 6,
+              "source": "Archive_3_4",
+              "reliability": 0.5,
+              "scope": {
+                "region": "*",
+                "tier": "*",
+                "product": "*"
+              },
+              "docId": "w3_d7",
+              "theta": [
+                6.2482787221397,
+                1.9547687622336491
+              ],
+              "sig": "ef064969bafd8243bbaf42d00148104f"
+            }
+          ]
+        },
+        {
+          "id": "w3_d6",
+          "domain": "PROCUREMENT",
+          "text": "PROCUREMENT office records maintenance reference 3 historical operational guidance",
+          "source": "Archive_3_3",
+          "timestamp": 5,
+          "reliability": 0.5,
+          "claims": [
+            {
+              "domain": "PROCUREMENT",
+              "subject": "unrelated_3",
+              "value": "reference_3",
+              "timestamp": 5,
+              "source": "Archive_3_3",
+              "reliability": 0.5,
+              "scope": {
+                "region": "*",
+                "tier": "*",
+                "product": "*"
+              },
+              "docId": "w3_d6",
+              "theta": [
+                3.0543261909900763,
+                4.293509959906051
+              ],
+              "sig": "0c4e875fa4c8929dea33c414d07d946d"
+            }
+          ]
+        },
+        {
+          "id": "w3_d60",
+          "domain": "PROCUREMENT",
+          "text": "What is the current storage_limit_003 policy for NORTH PLUS Y? PROCUREMENT  revised guidance limit_45",
+          "source": "Authority_3",
+          "timestamp": 102,
+          "reliability": 0.9051394991297275,
+          "claims": [
+            {
+              "domain": "PROCUREMENT",
+              "subject": "storage_limit_003",
+              "value": "limit_45",
+              "timestamp": 102,
+              "source": "Authority_3",
+              "reliability": 0.9051394991297275,
+              "scope": {
+                "region": "NORTH",
+                "tier": "PLUS",
+                "product": "Y"
+              },
+              "docId": "w3_d60",
+              "theta": [
+                5.8643062867009474,
+                0.4886921905584123
+              ],
+              "sig": "00000000000000000000000000000000"
+            }
+          ]
+        },
+        {
+          "id": "w3_d1",
+          "domain": "PROCUREMENT",
+          "text": "For PROCUREMENT, the applicable storage_limit_003 rule is limit_87. Coverage NORTH PLUS Y. Approved operational instructions.",
+          "source": "Authority_3",
+          "timestamp": 95,
+          "reliability": 0.8746234703343362,
+          "claims": [
+            {
+              "domain": "PROCUREMENT",
+              "subject": "storage_limit_003",
+              "value": "limit_87",
+              "timestamp": 95,
+              "source": "Authority_3",
+              "reliability": 0.8746234703343362,
+              "scope": {
+                "region": "NORTH",
+                "tier": "PLUS",
+                "product": "Y"
+              },
+              "docId": "w3_d1",
+              "theta": [
+                5.8643062867009474,
+                0.4886921905584123
+              ],
+              "sig": "ed88abe5e2dbf5618bd1d214f00d7c67"
+            }
+          ]
+        },
+        {
+          "id": "w3_d58",
+          "domain": "PROCUREMENT",
+          "text": "What is the current storage_limit_003 policy for NORTH PLUS Y? PROCUREMENT  operational notice limit_45",
+          "source": "Authority_3",
+          "timestamp": 104,
+          "reliability": 0.7701394991297275,
+          "claims": [
+            {
+              "domain": "PROCUREMENT",
+              "subject": "storage_limit_003",
+              "value": "limit_45",
+              "timestamp": 104,
+              "source": "Authority_3",
+              "reliability": 0.7701394991297275,
+              "scope": {
+                "region": "NORTH",
+                "tier": "PLUS",
+                "product": "Y"
+              },
+              "docId": "w3_d58",
+              "theta": [
+                5.8643062867009474,
+                0.4886921905584123
+              ],
+              "sig": "00000000000000000000000000000000"
+            }
+          ]
+        },
+        {
+          "id": "w3_d5",
+          "domain": "PROCUREMENT",
+          "text": "PROCUREMENT office records maintenance reference 2 historical operational guidance",
+          "source": "Archive_3_2",
+          "timestamp": 4,
+          "reliability": 0.5,
+          "claims": [
+            {
+              "domain": "PROCUREMENT",
+              "subject": "unrelated_2",
+              "value": "reference_2",
+              "timestamp": 4,
+              "source": "Archive_3_2",
+              "reliability": 0.5,
+              "scope": {
+                "region": "*",
+                "tier": "*",
+                "product": "*"
+              },
+              "docId": "w3_d5",
+              "theta": [
+                6.213372137099814,
+                1.413716694115407
+              ],
+              "sig": "9f1d9e17dfb7c7328f43d18699422acc"
+            }
+          ]
+        },
+        {
+          "id": "w3_d56",
+          "domain": "PROCUREMENT",
+          "text": "What is the current storage_limit_003 policy for NORTH PLUS Y? PROCUREMENT  revised guidance limit_45",
+          "source": "Authority_3",
+          "timestamp": 106,
+          "reliability": 0.8601394991297274,
+          "claims": [
+            {
+              "domain": "PROCUREMENT",
+              "subject": "storage_limit_003",
+              "value": "limit_45",
+              "timestamp": 106,
+              "source": "Authority_3",
+              "reliability": 0.8601394991297274,
+              "scope": {
+                "region": "NORTH",
+                "tier": "PLUS",
+                "product": "Y"
+              },
+              "docId": "w3_d56",
+              "theta": [
+                5.8643062867009474,
+                0.4886921905584123
+              ],
+              "sig": "00000000000000000000000000000000"
+            }
+          ]
+        },
+        {
+          "id": "w3_d0",
+          "domain": "PROCUREMENT",
+          "text": "PROCUREMENT storage_limit_003 policy states limit_23. Applies to * * *. Current operational guidance and policy register.",
+          "source": "Handbook_3",
+          "timestamp": 2,
+          "reliability": 0.9192263511940837,
+          "claims": [
+            {
+              "domain": "PROCUREMENT",
+              "subject": "storage_limit_003",
+              "value": "limit_23",
+              "timestamp": 2,
+              "source": "Handbook_3",
+              "reliability": 0.9192263511940837,
+              "scope": {
+                "region": "*",
+                "tier": "*",
+                "product": "*"
+              },
+              "docId": "w3_d0",
+              "theta": [
+                5.8643062867009474,
+                0.4886921905584123
+              ],
+              "sig": "a8d6544d55b1d068443acc3ef5a455ee"
+            }
+          ]
+        },
+        {
+          "id": "w3_d64",
+          "domain": "PROCUREMENT",
+          "text": "What is the current storage_limit_003 policy for NORTH PLUS Y? PROCUREMENT  revised guidance limit_45",
+          "source": "Authority_3",
+          "timestamp": 105,
+          "reliability": 0.7251394991297275,
+          "claims": [
+            {
+              "domain": "PROCUREMENT",
+              "subject": "storage_limit_003",
+              "value": "limit_45",
+              "timestamp": 105,
+              "source": "Authority_3",
+              "reliability": 0.7251394991297275,
+              "scope": {
+                "region": "NORTH",
+                "tier": "PLUS",
+                "product": "Y"
+              },
+              "docId": "w3_d64",
+              "theta": [
+                5.8643062867009474,
+                0.4886921905584123
+              ],
+              "sig": "00000000000000000000000000000000"
+            }
+          ]
+        },
+        {
+          "id": "w3_d59",
+          "domain": "PROCUREMENT",
+          "text": "What is the current storage_limit_003 policy for NORTH PLUS Y? PROCUREMENT  confirmed bulletin limit_45",
+          "source": "Authority_3",
+          "timestamp": 103,
+          "reliability": 0.7251394991297275,
+          "claims": [
+            {
+              "domain": "PROCUREMENT",
+              "subject": "storage_limit_003",
+              "value": "limit_45",
+              "timestamp": 103,
+              "source": "Authority_3",
+              "reliability": 0.7251394991297275,
+              "scope": {
+                "region": "NORTH",
+                "tier": "PLUS",
+                "product": "Y"
+              },
+              "docId": "w3_d59",
+              "theta": [
+                5.8643062867009474,
+                0.4886921905584123
+              ],
+              "sig": "00000000000000000000000000000000"
+            }
+          ]
+        },
+        {
+          "id": "w3_d9",
+          "domain": "PROCUREMENT",
+          "text": "PROCUREMENT office records maintenance reference 6 historical operational guidance",
+          "source": "Archive_3_6",
+          "timestamp": 8,
+          "reliability": 0.5,
+          "claims": [
+            {
+              "domain": "PROCUREMENT",
+              "subject": "unrelated_6",
+              "value": "reference_6",
+              "timestamp": 8,
+              "source": "Archive_3_6",
+              "reliability": 0.5,
+              "scope": {
+                "region": "*",
+                "tier": "*",
+                "product": "*"
+              },
+              "docId": "w3_d9",
+              "theta": [
+                0,
+                2.5132741228718345
+              ],
+              "sig": "f0ade203dc239e6cc7a53f15ef4b6d40"
+            }
+          ]
+        },
+        {
+          "id": "w3_d55",
+          "domain": "PROCUREMENT",
+          "text": "What is the current storage_limit_003 policy for NORTH PLUS Y? PROCUREMENT  confirmed bulletin limit_45",
+          "source": "Authority_3",
+          "timestamp": 107,
+          "reliability": 0.9051394991297275,
+          "claims": [
+            {
+              "domain": "PROCUREMENT",
+              "subject": "storage_limit_003",
+              "value": "limit_45",
+              "timestamp": 107,
+              "source": "Authority_3",
+              "reliability": 0.9051394991297275,
+              "scope": {
+                "region": "NORTH",
+                "tier": "PLUS",
+                "product": "Y"
+              },
+              "docId": "w3_d55",
+              "theta": [
+                5.8643062867009474,
+                0.4886921905584123
+              ],
+              "sig": "00000000000000000000000000000000"
+            }
+          ]
+        },
+        {
+          "id": "w3_d61",
+          "domain": "PROCUREMENT",
+          "text": "What is the current storage_limit_003 policy for NORTH PLUS Y? PROCUREMENT  policy clarification limit_45",
+          "source": "Authority_3",
+          "timestamp": 101,
+          "reliability": 0.8601394991297274,
+          "claims": [
+            {
+              "domain": "PROCUREMENT",
+              "subject": "storage_limit_003",
+              "value": "limit_45",
+              "timestamp": 101,
+              "source": "Authority_3",
+              "reliability": 0.8601394991297274,
+              "scope": {
+                "region": "NORTH",
+                "tier": "PLUS",
+                "product": "Y"
+              },
+              "docId": "w3_d61",
+              "theta": [
+                5.8643062867009474,
+                0.4886921905584123
+              ],
+              "sig": "00000000000000000000000000000000"
+            }
+          ]
+        },
+        {
+          "id": "w3_d4",
+          "domain": "PROCUREMENT",
+          "text": "PROCUREMENT office records maintenance reference 1 historical operational guidance",
+          "source": "Archive_3_1",
+          "timestamp": 3,
+          "reliability": 0.5,
+          "claims": [
+            {
+              "domain": "PROCUREMENT",
+              "subject": "unrelated_1",
+              "value": "reference_1",
+              "timestamp": 3,
+              "source": "Archive_3_1",
+              "reliability": 0.5,
+              "scope": {
+                "region": "*",
+                "tier": "*",
+                "product": "*"
+              },
+              "docId": "w3_d4",
+              "theta": [
+                3.01941960595019,
+                3.752457891787808
+              ],
+              "sig": "82ca064e49ec511985d99bcabcacc84c"
+            }
+          ]
+        },
+        {
+          "id": "w3_d63",
+          "domain": "PROCUREMENT",
+          "text": "What is the current storage_limit_003 policy for NORTH PLUS Y? PROCUREMENT  confirmed bulletin limit_45",
+          "source": "Authority_3",
+          "timestamp": 106,
+          "reliability": 0.7701394991297275,
+          "claims": [
+            {
+              "domain": "PROCUREMENT",
+              "subject": "storage_limit_003",
+              "value": "limit_45",
+              "timestamp": 106,
+              "source": "Authority_3",
+              "reliability": 0.7701394991297275,
+              "scope": {
+                "region": "NORTH",
+                "tier": "PLUS",
+                "product": "Y"
+              },
+              "docId": "w3_d63",
+              "theta": [
+                5.8643062867009474,
+                0.4886921905584123
+              ],
+              "sig": "00000000000000000000000000000000"
+            }
+          ]
+        },
+        {
+          "id": "w3_d2",
+          "domain": "PROCUREMENT",
+          "text": "storage_limit_003 limit limit_117 for product Y, tier PLUS, region SOUTH. PROCUREMENT current policy reference.",
+          "source": "Branch_3",
+          "timestamp": 107,
+          "reliability": 0.9336220173048787,
+          "claims": [
+            {
+              "domain": "PROCUREMENT",
+              "subject": "storage_limit_003",
+              "value": "limit_117",
+              "timestamp": 107,
+              "source": "Branch_3",
+              "reliability": 0.9336220173048787,
+              "scope": {
+                "region": "SOUTH",
+                "tier": "PLUS",
+                "product": "Y"
+              },
+              "docId": "w3_d2",
+              "theta": [
+                5.8643062867009474,
+                0.4886921905584123
+              ],
+              "sig": "8098115925cb3ffea6eea668a8f9ac62"
+            }
+          ]
+        },
+        {
+          "id": "w3_d62",
+          "domain": "PROCUREMENT",
+          "text": "What is the current storage_limit_003 policy for NORTH PLUS Y? PROCUREMENT  operational notice limit_45",
+          "source": "Authority_3",
+          "timestamp": 107,
+          "reliability": 0.8151394991297275,
+          "claims": [
+            {
+              "domain": "PROCUREMENT",
+              "subject": "storage_limit_003",
+              "value": "limit_45",
+              "timestamp": 107,
+              "source": "Authority_3",
+              "reliability": 0.8151394991297275,
+              "scope": {
+                "region": "NORTH",
+                "tier": "PLUS",
+                "product": "Y"
+              },
+              "docId": "w3_d62",
+              "theta": [
+                5.8643062867009474,
+                0.4886921905584123
+              ],
+              "sig": "00000000000000000000000000000000"
+            }
+          ]
+        },
+        {
+          "id": "w3_d8",
+          "domain": "PROCUREMENT",
+          "text": "PROCUREMENT office records maintenance reference 5 historical operational guidance",
+          "source": "Archive_3_5",
+          "timestamp": 7,
+          "reliability": 0.5,
+          "claims": [
+            {
+              "domain": "PROCUREMENT",
+              "subject": "unrelated_5",
+              "value": "reference_5",
+              "timestamp": 7,
+              "source": "Archive_3_5",
+              "reliability": 0.5,
+              "scope": {
+                "region": "*",
+                "tier": "*",
+                "product": "*"
+              },
+              "docId": "w3_d8",
+              "theta": [
+                3.0892327760299634,
+                4.834562028024293
+              ],
+              "sig": "4cb42a036d8a1a92142754258e251390"
+            }
+          ]
+        },
+        {
+          "id": "w3_d57",
+          "domain": "PROCUREMENT",
+          "text": "What is the current storage_limit_003 policy for NORTH PLUS Y? PROCUREMENT  policy clarification limit_45",
+          "source": "Authority_3",
+          "timestamp": 105,
+          "reliability": 0.8151394991297275,
+          "claims": [
+            {
+              "domain": "PROCUREMENT",
+              "subject": "storage_limit_003",
+              "value": "limit_45",
+              "timestamp": 105,
+              "source": "Authority_3",
+              "reliability": 0.8151394991297275,
+              "scope": {
+                "region": "NORTH",
+                "tier": "PLUS",
+                "product": "Y"
+              },
+              "docId": "w3_d57",
+              "theta": [
+                5.8643062867009474,
+                0.4886921905584123
+              ],
+              "sig": "00000000000000000000000000000000"
+            }
+          ]
+        },
+        {
+          "id": "w3_d10",
+          "domain": "PROCUREMENT",
+          "text": "PROCUREMENT office records maintenance reference 7 historical operational guidance",
+          "source": "Archive_3_7",
+          "timestamp": 9,
+          "reliability": 0.5,
+          "claims": [
+            {
+              "domain": "PROCUREMENT",
+              "subject": "unrelated_7",
+              "value": "reference_7",
+              "timestamp": 9,
+              "source": "Archive_3_7",
+              "reliability": 0.5,
+              "scope": {
+                "region": "*",
+                "tier": "*",
+                "product": "*"
+              },
+              "docId": "w3_d10",
+              "theta": [
+                3.12413936106985,
+                5.375614096142535
+              ],
+              "sig": "9de6ebb3820481f8aae76a40095ab4c0"
+            }
+          ]
+        }
+      ],
+      "support": [
+        "w3_d1"
+      ]
+    }
+  }
+}

@@ -5,6 +5,63 @@ A deterministic benchmark for measuring how well retrieval-augmented systems han
 
 LLM-free by design. The synthetic corpus has known ground truth, so results are reproducible and don't depend on model sampling.
 
+**Evidence boundary (30 September 2026):** the zero-false-assertion and provenance
+results below describe this repository's original synthetic corpus only. A new,
+fixed-six-document stress test produced 1,861 wrong assertions for default PAL
+and 1,609 with its original provenance penalty enabled, including errors when
+the true document was retrieved. Those cases are now development data.
+[The repair report](experiments/fixed-budget/REPORT.md) preserves the failures,
+the opt-in repairs, and the remaining signed-source failures. No default has
+been changed to hide the original negative results.
+
+## Opt-in trust policy and value-based confidence
+
+The original provenance mechanism demotes a forgery's reliability; a sufficiently
+recent forgery can still win. For a corpus where only verified claims may support
+an answer, opt in to an eligibility gate:
+
+```json
+{
+  "verifyProvenance": true,
+  "provenancePolicy": "require_verified"
+}
+```
+
+Ineligible claims are removed **after shared retrieval and before scoring**.
+There is no retrieval refill. If no eligible claim remains, PAL returns
+`NO_ANSWER`. The combination is rejected if verification is off, and misspelled
+policy names are rejected. The default policy is `penalize`, preserving the
+original behavior. Strict verification costs coverage on unsigned corpora; a
+valid signature establishes identity, not truth, authorization, or reliability.
+
+An additional **experimental** `confidenceModel: "value_max"` compares distinct
+values using their strongest eligible claims. It prevents agreement becoming
+its own rival and makes support invariant to exact copies. It neither sums
+witnesses nor infers independence from identities. Count penalties are skipped
+because they would let copies dilute max support; both reliability factors use
+effective reliability, preventing a capped claim retaining its declared base
+weight. Existing `dominance` and `independence` models retain their scores.
+
+**Do not equate the confidence repair with a safety improvement.** On the exposed
+7,440-case development set, strict verification with legacy dominance reduces
+wrong assertions from 1,861 to 801. Adding `value_max` repairs all 240 clean
+corroboration cases but raises wrong assertions to 2,634, largely because signed
+lies no longer tie themselves into abstention. A strict scope-aware reranker also
+outperforms it on overall correctness. Both fixes remain opt-in; the confidence
+model is a documented tradeoff, not the new recommended default.
+
+```bash
+npm test                       # original guards plus captured failure regressions
+npm run bench:repair           # frozen development corpus; results/repair/
+npm run bench:repair:original  # compare configurations on the original corpus
+```
+
+The strict configurations score 100% on the original corpus. That is a development
+result under a stricter evidence policy, not independent validation. The new
+generator, corpus hash check, baseline parity assertions, replay fixtures and
+[pre-implementation repair protocol](REPAIR_PROTOCOL.md) make the comparison
+reviewable. There was no threshold tuning.
+
 ---
 
 ## The problem
