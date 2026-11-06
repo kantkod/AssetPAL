@@ -70,7 +70,7 @@ stated as clearly as its wins.
 
 ```bash
 npm run gen     # generate the synthetic corpus -> results/corpus/
-npm test        # 54 tests; self-bootstraps the corpus if missing
+npm test        # 70 tests; self-bootstraps the corpus if missing
 npm run bench   # full run -> runs/<runId>/ + results.json
 npm run build   # static site -> public/ (this is the Netlify build)
 npm run inspect # local-only per-query inspector on :3000
