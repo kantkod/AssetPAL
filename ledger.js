@@ -1,5 +1,6 @@
 import { torusWeight, projectToTorus } from "./torus.js";
 import { effectiveSource, effectiveReliability, verifyClaim } from "./provenance.js";
+import { tokenize } from "./retrieval.js";
 
 export class TruthLedger {
   constructor(cfg) {
@@ -47,7 +48,8 @@ export class TruthLedger {
 
     const scored = candidates.map(c => {
       const effRel = effectiveReliability(c, cfg);
-      const valueMax = cfg.confidenceModel === "value_max";
+      // exclusion uses value_max scoring exactly; only the aggregation differs.
+      const valueMax = cfg.confidenceModel === "value_max" || cfg.confidenceModel === "exclusion";
       // Legacy modes keep their historical scores. In value_max both factors
       // use effective reliability: a capped forgery must not retain its claimed
       // reputation through the base weight stored by upsertClaim.
@@ -96,6 +98,7 @@ export class TruthLedger {
     if (scored.length === 0) return { status: "NO_EVIDENCE", confidence: 0, picks: [] };
 
     if (cfg.confidenceModel === "value_max") return decideByValueMax(cfg, scored);
+    if (cfg.confidenceModel === "exclusion") return decideByExclusion(cfg, scored);
     return (cfg.confidenceModel ?? "dominance") === "dominance"
       ? decideByDominance(cfg, scored)
       : decideByIndependence(cfg, scored);
@@ -120,6 +123,81 @@ function decideByValueMax(cfg, scored) {
     return { status: "CONFLICT", confidence, picks: [top, rival] };
   }
   return { status: "RESOLVED", confidence, picks: [top] };
+}
+
+// Exclusion (the fermion idea; pre-registered 7 Nov 2026, flag-gated, not default).
+// Within each value, claims are taken strongest first; each adds its score times
+// the length of the part of its direction that the stronger claims before it do
+// not already span (a Gram-Schmidt residual). An exact copy adds nothing; a claim
+// pointing somewhere new adds its full score. What a "direction" encodes is the
+// whole question: identity, document wording, or both. Scoring is value_max's.
+function decideByExclusion(cfg, scored) {
+  const mode = cfg.exclusionDirections ?? "identity";
+  if (!["identity", "text", "identity_text"].includes(mode)) {
+    throw new Error(`Unknown exclusionDirections: ${mode}`);
+  }
+  const groups = new Map();
+  for (const c of scored) {
+    const key = String(c.value);
+    if (!groups.has(key)) groups.set(key, { value: c.value, claims: [] });
+    groups.get(key).claims.push(c);
+  }
+  for (const g of groups.values()) {
+    g.claims.sort((a, b) => (b.score - a.score) || String(a.docId).localeCompare(String(b.docId)));
+    const basis = [];
+    g.mass = 0;
+    g.residuals = [];
+    for (const c of g.claims) {
+      const r = residualLength(exclusionDirection(c, mode), basis);
+      g.residuals.push(r);
+      g.mass += c.score * r;
+    }
+  }
+  const ranked = [...groups.values()].sort((a, b) => (b.mass - a.mass) || String(a.value).localeCompare(String(b.value)));
+  const [win, rival] = ranked;
+  // Per-value residuals, strongest claim first: what each extra claim added.
+  const report = ranked.map(g => ({ value: String(g.value), mass: g.mass, residuals: g.residuals }));
+  if (!rival) return { status: "SINGLE", confidence: singleConfidence(win.claims[0]), picks: [win.claims[0]], groups: report };
+  const confidence = clamp01(win.mass / (win.mass + rival.mass + 1e-9));
+  if (confidence < (1 - cfg.contradictionThreshold)) {
+    return { status: "CONFLICT", confidence, picks: [win.claims[0], rival.claims[0]], groups: report };
+  }
+  return { status: "RESOLVED", confidence, picks: [win.claims[0]], groups: report };
+}
+
+// Unit-length sparse direction (Map key -> weight) for one claim.
+export function exclusionDirection(c, mode) {
+  const v = new Map();
+  if (mode === "identity" || mode === "identity_text") {
+    v.set(`id:${c.identity ?? c.source ?? "unknown"}`, 1);
+  }
+  if (mode === "text" || mode === "identity_text") {
+    const tf = new Map();
+    for (const t of tokenize(c.text ?? "")) tf.set(t, (tf.get(t) || 0) + 1);
+    const n = Math.sqrt([...tf.values()].reduce((s, x) => s + x * x, 0)) || 1;
+    for (const [t, x] of tf) v.set(`t:${t}`, x / n);
+  }
+  const n = Math.sqrt([...v.values()].reduce((s, x) => s + x * x, 0));
+  if (n === 0) return v;
+  for (const [k, x] of v) v.set(k, x / n); // identity_text: each half ends up at 1/sqrt(2)
+  return v;
+}
+
+// Length of v's component orthogonal to the span of `basis` (orthonormal sparse
+// maps); appends the normalised residual to `basis`. Returns a value in [0, 1].
+export function residualLength(v, basis) {
+  const r = new Map(v);
+  for (const b of basis) {
+    let dot = 0;
+    for (const [k, x] of r) { const y = b.get(k); if (y) dot += x * y; }
+    if (dot !== 0) for (const [k, y] of b) r.set(k, (r.get(k) || 0) - dot * y);
+  }
+  const len = Math.sqrt([...r.values()].reduce((s, x) => s + x * x, 0));
+  if (len <= 1e-9) return 0;
+  const u = new Map();
+  for (const [k, x] of r) if (Math.abs(x) > 1e-15) u.set(k, x / len);
+  basis.push(u);
+  return Math.min(1, len);
 }
 
 // Legacy model: compare the top two individual claims.

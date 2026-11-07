@@ -307,6 +307,24 @@ Both models are exercised by `test/confidence.test.js`, including the regression
 
 **This diagnosis has since been tested directly, and it was correct** — see the next section. Establishing identity out of band takes the independence model from 48 false assertions to zero.
 
+### A third model: exclusion (7 Nov 2026), only as good as its directions
+
+**`exclusion` (not default, kept for research).** Within each value, claims are taken strongest first, and each adds its score multiplied by the part of its direction that the stronger claims do not already span. An exact copy adds nothing; a claim pointing somewhere new adds its full score. The idea is the fermion side of an analogy: adding evidence piles copies up like bosons, while exclusion lets only genuinely different evidence count. Everything depends on what a "direction" encodes, so three were tested, pre-registered, on the 7,440-case stress corpus (development data):
+
+- **By identity,** it equals `value_max` exactly: 2,434 correct, 2,634 wrong assertions under the strict gate.
+- **By wording,** it is worse in every configuration (strict: 2,683 wrong assertions).
+- **No arm beats** `SCOPED_RERANK_strict` (42.3 % correct).
+
+What it adds is a number: how much support one extra forged document buys, as a share of an independent witness.
+
+| Direction | Same source, many copies | Forged names, unsigned | Forged names, identity verified |
+|---|---|---|---|
+| Identity | 0 | 1.00 | 0 |
+| Wording | 0.39 | 0.39 | 0.39 |
+| Identity + wording | 0.29 | 0.87 | 0.28 |
+
+The lesson is the one above, now measured: independence has to come from a channel an attacker cannot vary cheaply. Varying the wording is cheap. Details: `experiments/exclusion/REPORT.md`.
+
 ---
 
 ## Unforgeable provenance — the negative result, resolved

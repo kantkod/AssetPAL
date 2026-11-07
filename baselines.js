@@ -79,7 +79,9 @@ export function answerWithBaseline(name, cfg, retrievedDocs, query){
             ...c,
             reliability: d.reliability ?? c.reliability ?? 0.5,
             timestamp: d.timestamp,
-            source: d.source
+            source: d.source,
+            // Only the exclusion model reads document text; others never see it.
+            ...(cfg.confidenceModel === "exclusion" ? { text: d.text } : {})
           });
         }
       }

@@ -1,6 +1,6 @@
 import { makeRng } from "./rng.js";
 
-function tokenize(s) {
+export function tokenize(s) {
   return (s || "").toLowerCase().replace(/[^a-z0-9_\s]/g, " ").split(/\s+/).filter(Boolean);
 }
 function overlapScore(qTokens, dTokens) {

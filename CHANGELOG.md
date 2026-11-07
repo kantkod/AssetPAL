@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- **Exclusion confidence,** behind a flag (`confidenceModel: "exclusion"`, `exclusionDirections`): copies add nothing, and each claim counts only for the new direction it adds. Pre-registered and run on the stress corpus (development data). By identity it equals `value_max` exactly (2,434 correct, 2,634 wrong assertions); by wording it is worse in every configuration (strict: 2,683 wrong); no arm beats `SCOPED_RERANK_strict`. It measures the price of a manufactured witness: 0 by signed identity, 0.39 by wording, 1.00 by unsigned name. See `experiments/exclusion/REPORT.md`.
+- 76 tests pass (6 new).
+
 ## 0.4.0 (6 Nov 2026)
 
 First tagged release: everything committed up to 30 Sep 2026.

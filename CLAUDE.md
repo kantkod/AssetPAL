@@ -26,6 +26,20 @@ of those claims, even with provenance penalties enabled. See
 - `npm run bench:repair` regenerates the exact exposed 7,440 cases, checks the
   frozen corpus hash and baseline counts, and records summaries and traces.
 
+## 2026-11-07 exclusion confidence — experimental, not default
+
+- `confidenceModel: "exclusion"` with `exclusionDirections` = `identity` | `text` |
+  `identity_text`: within each value, a claim adds its score times the part of its
+  direction the stronger claims do not already span. A copy adds nothing.
+- Pre-registered result (`experiments/exclusion/REPORT.md`, development data):
+  by identity it equals `value_max` exactly on the stress corpus; by wording it
+  raises wrong assertions in every configuration; no arm beats
+  `SCOPED_RERANK_strict`. Its value is the measured price of a manufactured
+  witness (identity 0, wording 0.39, unsigned names 1.00 per extra forged doc).
+- Do not make it default. Do not use wording directions as a defence.
+- `test/exclusion.test.js` pins the by-construction properties (copies add zero,
+  order-invariance); they were broken once on purpose and went red.
+
 ---
 
 ## STOP — required before writing another simulation
@@ -70,7 +84,7 @@ stated as clearly as its wins.
 
 ```bash
 npm run gen     # generate the synthetic corpus -> results/corpus/
-npm test        # 70 tests; self-bootstraps the corpus if missing
+npm test        # 76 tests; self-bootstraps the corpus if missing
 npm run bench   # full run -> runs/<runId>/ + results.json
 npm run build   # static site -> public/ (this is the Netlify build)
 npm run inspect # local-only per-query inspector on :3000
@@ -96,6 +110,7 @@ never commit them.
 | `test/scoring.test.js` / `test/confidence.test.js` | Scoring rules; the dominance vs independence models |
 | `test/invariants.test.js` | Structural guards: one scoring rule, torus inertness, corpus hash, the attack generator's contract |
 | `test/provenance.test.js` | Unforgeable identity: the primitive, what it fixes, and what it deliberately does not |
+| `test/exclusion.test.js` | Exclusion confidence: copies add zero, order-invariance, distinct witnesses raise confidence |
 
 ## Invariants — do not break these
 
